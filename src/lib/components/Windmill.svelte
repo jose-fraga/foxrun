@@ -2,6 +2,9 @@
   import { T, useTask } from '@threlte/core'
   import { useGltf } from '@threlte/extras'
   import * as THREE from 'three'
+  import { addObstacle } from '../utils/obstacles.js'
+
+  addObstacle(5, 5, 3)
 
   const gltf = useGltf('/Windmill.glb')
 

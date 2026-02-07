@@ -37,28 +37,18 @@
 
     if (mixer) mixer.update(delta)
 
-    const { prev, curr } = playerState
-    const elapsed = performance.now() - curr.time
-    const interval = curr.time - prev.time
+    const { curr } = playerState
+    const t = 1 - Math.exp(-15 * delta)
 
-    if (interval > 0) {
-      const t = Math.min(1, Math.max(0, elapsed / interval))
+    displayX += (curr.x - displayX) * t
+    displayY += (curr.y - displayY) * t
+    displayZ += (curr.z - displayZ) * t
 
-      displayX = prev.x + (curr.x - prev.x) * t
-      displayY = prev.y + (curr.y - prev.y) * t
-      displayZ = prev.z + (curr.z - prev.z) * t
-
-      // Shortest-path rotation interpolation
-      let dAngle = curr.ry - prev.ry
-      if (dAngle > Math.PI) dAngle -= 2 * Math.PI
-      if (dAngle < -Math.PI) dAngle += 2 * Math.PI
-      displayRY = prev.ry + dAngle * t
-    } else {
-      displayX = curr.x
-      displayY = curr.y
-      displayZ = curr.z
-      displayRY = curr.ry
-    }
+    // Shortest-path rotation interpolation
+    let dAngle = curr.ry - displayRY
+    if (dAngle > Math.PI) dAngle -= 2 * Math.PI
+    if (dAngle < -Math.PI) dAngle += 2 * Math.PI
+    displayRY += dAngle * t
 
     playAction(curr.anim)
   })
