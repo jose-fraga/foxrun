@@ -1,0 +1,4 @@
+{
+  "name": "foxrun",
+  "main": "party/server.js"
+}

@@ -1,0 +1,27 @@
+{
+  "name": "foxrun",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "dev:party": "partykit dev",
+    "build": "vite build",
+    "preview": "vite preview",
+    "deploy:party": "partykit deploy"
+  },
+  "devDependencies": {
+    "@sveltejs/vite-plugin-svelte": "^6.2.1",
+    "partykit": "^0.0.115",
+    "svelte": "^5.43.8",
+    "vite": "^7.2.4"
+  },
+  "dependencies": {
+    "@dimforge/rapier3d-compat": "^0.19.3",
+    "@threlte/core": "^8.3.1",
+    "@threlte/extras": "^9.7.1",
+    "@threlte/rapier": "^3.2.0",
+    "partysocket": "^1.1.11",
+    "three": "^0.182.0"
+  }
+}
