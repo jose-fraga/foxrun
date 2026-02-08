@@ -46,35 +46,40 @@
     align-items: center;
     justify-content: center;
     height: 100vh;
-    gap: 1rem;
-    font-family: sans-serif;
+    gap: 1.2rem;
+    font-family: "permanent-marker", sans-serif;
     background: linear-gradient(180deg, #87ceeb 0%, #c8dff5 60%, #4a8c3f 100%);
   }
   .lobby h1 {
-    font-size: 2.5rem;
+    font-size: 3.5rem;
     color: #2d5a1e;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    text-shadow: 2px 3px 0 rgba(0, 0, 0, 0.15);
+    letter-spacing: 2px;
   }
   .lobby input {
     padding: 0.6rem 1.2rem;
     font-size: 1.1rem;
-    border: 2px solid #4a8c3f;
-    border-radius: 6px;
+    font-family: "permanent-marker", sans-serif;
+    border: 3px solid #2d5a1e;
+    border-radius: 4px;
     outline: none;
     text-align: center;
+    background: rgba(255, 255, 255, 0.85);
   }
   .lobby input:focus {
-    border-color: #2d5a1e;
+    border-color: #1a3a10;
   }
   .lobby button {
-    padding: 0.6rem 2.5rem;
-    font-size: 1.1rem;
-    background: #4a8c3f;
+    padding: 0.7rem 2.5rem;
+    font-size: 1.3rem;
+    font-family: "permanent-marker", sans-serif;
+    background: #2d5a1e;
     color: white;
-    border: none;
-    border-radius: 6px;
+    border: 3px solid #1a3a10;
+    border-radius: 4px;
     cursor: pointer;
-    font-weight: bold;
+    letter-spacing: 1px;
+    text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.3);
   }
   .lobby button:hover {
     background: #3a7a2f;

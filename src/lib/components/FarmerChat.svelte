@@ -80,7 +80,7 @@
     color: #fff;
     padding: 0.5rem 1.2rem;
     border-radius: 8px;
-    font-family: sans-serif;
+    font-family: "permanent-marker", sans-serif;
     font-size: 0.9rem;
     pointer-events: none;
     z-index: 50;
@@ -113,7 +113,7 @@
     background: rgba(20, 15, 10, 0.85);
     color: #e8d4a0;
     font-size: 0.9rem;
-    font-family: sans-serif;
+    font-family: "permanent-marker", sans-serif;
     outline: none;
     backdrop-filter: blur(6px);
   }
@@ -135,7 +135,7 @@
     cursor: pointer;
     font-size: 0.85rem;
     font-weight: bold;
-    font-family: sans-serif;
+    font-family: "permanent-marker", sans-serif;
     backdrop-filter: blur(6px);
   }
   .input-bar button:hover {
