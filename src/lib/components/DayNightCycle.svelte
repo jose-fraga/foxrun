@@ -1,6 +1,6 @@
 <script>
   import { T, useTask } from '@threlte/core'
-  import { Sky, Stars } from '@threlte/extras'
+  import { Sky } from '@threlte/extras'
   import * as THREE from 'three'
   import { useThrelte } from '@threlte/core'
   import { dayNight } from '../stores/dayNight.js'
@@ -62,7 +62,36 @@
   let skyElevation = $derived(lerp(SUNSET.skyElevation, NIGHT.skyElevation, nightFactor))
   let skyTurbidity = $derived(lerp(SUNSET.skyTurbidity, NIGHT.skyTurbidity, nightFactor))
   let skyRayleigh = $derived(lerp(SUNSET.skyRayleigh, NIGHT.skyRayleigh, nightFactor))
-  let starsOpacity = $derived(nightFactor)
+  let starsVisible = $derived(nightFactor > 0.3)
+
+  // --- Static white stars (custom Points, no library component) ---
+  const STAR_COUNT = isMobile ? 1000 : 3000
+  const STAR_RADIUS = 400
+  const starPositions = new Float32Array(STAR_COUNT * 3)
+  const starSizes = new Float32Array(STAR_COUNT)
+  for (let i = 0; i < STAR_COUNT; i++) {
+    // Distribute on upper hemisphere sphere shell
+    const theta = Math.random() * Math.PI * 2
+    const phi = Math.acos(Math.random()) // 0 to PI/2 — upper hemisphere
+    const r = STAR_RADIUS * (0.8 + Math.random() * 0.2)
+    starPositions[i * 3] = r * Math.sin(phi) * Math.cos(theta)
+    starPositions[i * 3 + 1] = r * Math.cos(phi) // always positive (above)
+    starPositions[i * 3 + 2] = r * Math.sin(phi) * Math.sin(theta)
+    starSizes[i] = 1 + Math.random() * 3
+  }
+  const starGeometry = new THREE.BufferGeometry()
+  starGeometry.setAttribute('position', new THREE.BufferAttribute(starPositions, 3))
+  starGeometry.setAttribute('size', new THREE.BufferAttribute(starSizes, 1))
+  const starMaterial = new THREE.PointsMaterial({
+    color: 0xffffff,
+    size: 1,
+    sizeAttenuation: false,
+    depthWrite: false,
+    fog: false,
+  })
+  const starPoints = new THREE.Points(starGeometry, starMaterial)
+  starPoints.renderOrder = 100
+  starPoints.frustumCulled = false
 
   const { camera } = useThrelte()
 
@@ -177,16 +206,8 @@
 />
 
 <!-- Stars (visible at night, locked to camera) -->
-<T.Group oncreate={(ref) => { starsGroup = ref }}>
-  <Stars
-    radius={400}
-    depth={100}
-    count={isMobile ? 1000 : 3000}
-    factor={5}
-    fade
-    speed={0}
-    opacity={starsOpacity}
-  />
+<T.Group oncreate={(ref) => { starsGroup = ref }} visible={starsVisible}>
+  <T is={starPoints} />
 </T.Group>
 
 <!-- Fog -->

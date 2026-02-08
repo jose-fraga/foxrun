@@ -62,13 +62,13 @@
   const gravity = 20
   const keys = {}
   const playerQuat = new THREE.Quaternion()
-  let rotation = $state(0)
+  let rotation = $state(Math.PI)
   let rigidBody
   let isGrounded = true
   let landingTimer = 0
   let playerX = 55
   let playerY = 0
-  let playerZ = -55
+  let playerZ = -40
   let velocityY = 0
 
   function onKeyDown(e) {
@@ -161,16 +161,21 @@
     }
     touchInput._prevJump = touchInput.jump
 
-    if (keys['KeyA'] || keys['ArrowLeft'] || touchInput.left) rotation += rotSpeed * delta
-    if (keys['KeyD'] || keys['ArrowRight'] || touchInput.right) rotation -= rotSpeed * delta
+    if (keys['KeyA'] || keys['ArrowLeft']) rotation += rotSpeed * delta
+    else if (touchInput.left) rotation += rotSpeed * touchInput.leftAmount * delta
+    if (keys['KeyD'] || keys['ArrowRight']) rotation -= rotSpeed * delta
+    else if (touchInput.right) rotation -= rotSpeed * touchInput.rightAmount * delta
 
     _dir.set(0, 0, 0)
-    if (keys['KeyW'] || keys['ArrowUp'] || touchInput.forward) _dir.z += 1
-    if (keys['KeyS'] || keys['ArrowDown'] || touchInput.backward) _dir.z -= 1
+    let touchMoveScale = 1
+    if (keys['KeyW'] || keys['ArrowUp']) _dir.z += 1
+    else if (touchInput.forward) { _dir.z += 1; touchMoveScale = touchInput.forwardAmount }
+    if (keys['KeyS'] || keys['ArrowDown']) _dir.z -= 1
+    else if (touchInput.backward) { _dir.z -= 1; touchMoveScale = touchInput.backwardAmount }
 
     const isMoving = _dir.lengthSq() > 0
     const isSprinting = keys['ShiftLeft'] || keys['ShiftRight'] || touchInput.sprint
-    const currentSpeed = isMoving ? (isSprinting ? speed * 2 : speed) : 0
+    const currentSpeed = isMoving ? (isSprinting ? speed * 2 : speed) * touchMoveScale : 0
 
     if (isMoving) {
       _dir.normalize()

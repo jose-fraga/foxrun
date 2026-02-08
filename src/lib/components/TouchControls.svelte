@@ -45,6 +45,11 @@
     touchInput.backward = dy > DEAD_ZONE
     touchInput.left = dx < -DEAD_ZONE
     touchInput.right = dx > DEAD_ZONE
+    // Analog amounts (0–1) scaled past dead zone
+    touchInput.forwardAmount = dy < -DEAD_ZONE ? Math.min(1, (-dy - DEAD_ZONE) / (1 - DEAD_ZONE)) : 0
+    touchInput.backwardAmount = dy > DEAD_ZONE ? Math.min(1, (dy - DEAD_ZONE) / (1 - DEAD_ZONE)) : 0
+    touchInput.leftAmount = dx < -DEAD_ZONE ? Math.min(1, (-dx - DEAD_ZONE) / (1 - DEAD_ZONE)) : 0
+    touchInput.rightAmount = dx > DEAD_ZONE ? Math.min(1, (dx - DEAD_ZONE) / (1 - DEAD_ZONE)) : 0
   }
 
   function onJoystickStart(e) {
@@ -75,6 +80,10 @@
         touchInput.backward = false
         touchInput.left = false
         touchInput.right = false
+        touchInput.forwardAmount = 0
+        touchInput.backwardAmount = 0
+        touchInput.leftAmount = 0
+        touchInput.rightAmount = 0
       }
     }
   }
