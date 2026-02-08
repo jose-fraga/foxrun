@@ -5,6 +5,7 @@
   import { localPlayerPos } from '../utils/playerPosition.js'
   import { getRemotePlayers } from '../stores/players.svelte.js'
   import { POND_CENTER, POND_RADIUS } from '../utils/pond.js'
+  import { dayNight } from '../stores/dayNight.js'
 
   const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
     (navigator.maxTouchPoints > 0 && window.innerWidth < 1024)
@@ -396,6 +397,7 @@
   // --- Animate wind ---
   useTask((delta) => {
     grassUniforms.uTime.value += delta
+    grassUniforms.uGrassLightIntensity.value = 0.3 + dayNight.sunFactor * 0.7
 
     const positions = grassUniforms.uStomperPositions.value
     const active = grassUniforms.uStomperActive.value

@@ -1,4 +1,5 @@
 import { setCallbacks } from '../network.js'
+import { addMessage, setLoading } from '../stores/farmerChat.svelte.js'
 
 const ANIM_SHORT = { I: 'Idle', W: 'Walk', R: 'Gallop', O: 'Gallop_Jump' }
 const ANIM_TO_SHORT = { Idle: 'I', Walk: 'W', Gallop: 'R', Gallop_Jump: 'O' }
@@ -58,5 +59,9 @@ setCallbacks({
       remotePlayers = map
     }
     rp.update(data)
+  },
+  chatResponse(text) {
+    setLoading(false)
+    addMessage('farmer', text)
   },
 })

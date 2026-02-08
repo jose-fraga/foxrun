@@ -15,7 +15,8 @@
   const WALK_SPEED = 2.0
   const RUN_SPEED = 14
   const FIELD_LIMIT = 160
-  const WANDER_RADIUS = 120
+  const HERD_CENTER = { x: 120, z: 120 }
+  const WANDER_RADIUS = 40
   const MIN_SEPARATION = 3
   const FLEE_DIST = 12
   const SAFE_DIST = 25
@@ -46,17 +47,17 @@
 
   function pickTarget(d) {
     const angle = rand() * Math.PI * 2
-    const dist = 20 + rand() * WANDER_RADIUS
-    const pos = clampToField(Math.cos(angle) * dist, Math.sin(angle) * dist)
+    const dist = 5 + rand() * WANDER_RADIUS
+    const pos = clampToField(HERD_CENTER.x + Math.cos(angle) * dist, HERD_CENTER.z + Math.sin(angle) * dist)
     d.targetX = pos.x
     d.targetZ = pos.z
   }
 
   function initDeer(index) {
     const angle = rand() * Math.PI * 2
-    const dist = 30 + rand() * 80
-    let x = Math.cos(angle) * dist
-    let z = Math.sin(angle) * dist
+    const dist = 5 + rand() * WANDER_RADIUS
+    let x = HERD_CENTER.x + Math.cos(angle) * dist
+    let z = HERD_CENTER.z + Math.sin(angle) * dist
     const clamped = clampToField(x, z)
     x = clamped.x
     z = clamped.z

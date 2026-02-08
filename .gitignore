@@ -16,6 +16,7 @@ dist-ssr
 .partykit/
 
 # Environment
+.env
 .env.production
 
 # Editor directories and files

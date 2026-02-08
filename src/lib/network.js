@@ -10,12 +10,14 @@ let onInit = null
 let onPlayerJoin = null
 let onPlayerLeave = null
 let onPlayerState = null
+let onChatResponse = null
 
-export function setCallbacks({ init, join, leave, state }) {
+export function setCallbacks({ init, join, leave, state, chatResponse }) {
   onInit = init
   onPlayerJoin = join
   onPlayerLeave = leave
   onPlayerState = state
+  onChatResponse = chatResponse
 }
 
 export function connect(roomId) {
@@ -38,6 +40,9 @@ export function connect(roomId) {
         break
       case 'state':
         onPlayerState?.(data.id, data)
+        break
+      case 'chat_response':
+        onChatResponse?.(data.text)
         break
     }
   })
@@ -66,4 +71,10 @@ export function disconnect() {
 
 export function sendState(state) {
   lastSentState = state
+}
+
+export function sendChat(text) {
+  if (socket && socket.readyState === WebSocket.OPEN) {
+    socket.send(JSON.stringify({ type: 'chat', text }))
+  }
 }

@@ -36,9 +36,26 @@ function fbm(x, z) {
 export const noiseScale = 0.02
 export const heightScale = 3
 
+// Pond depression constants
+const POND_CX = -70
+const POND_CZ = -60
+const POND_R = 22
+const POND_DEPTH = 2
+
 export function getTerrainHeight(x, z) {
   const distFromCenter = Math.sqrt(x * x + z * z)
   const flatRadius = 15
   const flatFactor = Math.min(1, Math.max(0, (distFromCenter - flatRadius) / 20))
-  return fbm(x * noiseScale, z * noiseScale) * heightScale * flatFactor
+  let h = fbm(x * noiseScale, z * noiseScale) * heightScale * flatFactor
+
+  // Pond depression: smooth dip toward center
+  const dx = x - POND_CX
+  const dz = z - POND_CZ
+  const pondDist = Math.sqrt(dx * dx + dz * dz)
+  if (pondDist < POND_R) {
+    const t = 1 - pondDist / POND_R
+    h -= POND_DEPTH * t * t
+  }
+
+  return h
 }

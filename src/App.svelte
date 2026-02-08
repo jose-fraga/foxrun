@@ -4,6 +4,7 @@
   import Scene from "./lib/components/Scene.svelte";
   import CharacterSelect from "./lib/components/CharacterSelect.svelte";
   import TouchControls from "./lib/components/TouchControls.svelte";
+  import FarmerChat from "./lib/components/FarmerChat.svelte";
   import { connect } from "./lib/network.js";
 
   let connected = $state(false);
@@ -35,6 +36,7 @@
   </Canvas>
   <CharacterSelect />
   <TouchControls />
+  <FarmerChat />
 {/if}
 
 <style>

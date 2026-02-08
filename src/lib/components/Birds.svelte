@@ -118,6 +118,21 @@
       const dz = flock.group.position.z - flock.startZ
       const dist = Math.sqrt(dx * dx + dz * dz)
       if (dist > despawnDistance) {
+        // Dispose geometry/materials to prevent memory leaks
+        flock.group.traverse((child) => {
+          if (child.isMesh) {
+            child.geometry?.dispose()
+            if (Array.isArray(child.material)) {
+              child.material.forEach(m => m.dispose())
+            } else {
+              child.material?.dispose()
+            }
+          }
+        })
+        for (const bird of flock.birds) {
+          bird.mixer.stopAllAction()
+          bird.mixer.uncacheRoot(bird.mixer.getRoot())
+        }
         groupRef.remove(flock.group)
         flocks.splice(i, 1)
       }

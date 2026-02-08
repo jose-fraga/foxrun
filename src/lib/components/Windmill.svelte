@@ -4,7 +4,7 @@
   import * as THREE from 'three'
   import { addObstacle } from '../utils/obstacles.js'
 
-  addObstacle(5, 5, 3)
+  addObstacle(0, 0, 3)
 
   const gltf = useGltf('/Windmill.glb')
 
@@ -35,7 +35,7 @@
   <T
     is={value.scene}
     scale={3}
-    position={[5, 0, 5]}
+    position={[0, 0, 0]}
     oncreate={() => setupWindmill(value.scene)}
   />
 {/await}

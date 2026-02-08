@@ -10,6 +10,7 @@
   import { getSelectedCharacter } from '../stores/character.svelte.js'
   import { touchInput } from '../stores/input.js'
   import { loadModel } from '../utils/modelLoader.js'
+  import { getFarmerChat } from '../stores/farmerChat.svelte.js'
 
   const selectedChar = $derived(getSelectedCharacter())
 
@@ -65,12 +66,13 @@
   let rigidBody
   let isGrounded = true
   let landingTimer = 0
-  let playerX = 0
+  let playerX = 55
   let playerY = 0
-  let playerZ = 0
+  let playerZ = -55
   let velocityY = 0
 
   function onKeyDown(e) {
+    if (getFarmerChat().open) return
     keys[e.code] = true
     if (e.code === 'Space' && isGrounded) {
       velocityY = jumpForce
