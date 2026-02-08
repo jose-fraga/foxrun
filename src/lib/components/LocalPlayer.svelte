@@ -1,6 +1,5 @@
 <script>
   import { T, useTask } from '@threlte/core'
-  import { useGltf } from '@threlte/extras'
   import { RigidBody, Collider } from '@threlte/rapier'
   import * as THREE from 'three'
   import { resolveCollision } from '../utils/obstacles.js'
@@ -8,16 +7,11 @@
   import { animToShort } from '../stores/players.svelte.js'
   import { getTerrainHeight } from '../utils/terrain.js'
   import { localPlayerPos } from '../utils/playerPosition.js'
-  import { characters, getSelectedCharacter } from '../stores/character.svelte.js'
+  import { getSelectedCharacter } from '../stores/character.svelte.js'
   import { touchInput } from '../stores/input.js'
+  import { loadModel } from '../utils/modelLoader.js'
 
   const selectedChar = $derived(getSelectedCharacter())
-
-  // Preload all character models
-  const allModels = {}
-  for (const char of characters) {
-    allModels[char.id] = useGltf(char.model)
-  }
 
   // Animation
   let mixer = null
@@ -279,7 +273,7 @@
 
     <T.Group rotation.y={rotation}>
       {#key selectedChar.id}
-        {#await allModels[selectedChar.id] then value}
+        {#await loadModel(selectedChar.model) then value}
           <T
             is={value.scene}
             scale={1}

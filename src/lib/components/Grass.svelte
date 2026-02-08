@@ -6,9 +6,11 @@
   import { getRemotePlayers } from '../stores/players.svelte.js'
   import { POND_CENTER, POND_RADIUS } from '../utils/pond.js'
 
-  const MAX_STOMPERS = 8
+  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+    (navigator.maxTouchPoints > 0 && window.innerWidth < 1024)
 
-  const INSTANCE_COUNT = 650000
+  const MAX_STOMPERS = isMobile ? 4 : 8
+  const INSTANCE_COUNT = isMobile ? 200000 : 650000
   const FIELD_SIZE = 700
   const FENCE_HALF = 180
   const FALLOFF_DIST = 100
@@ -143,7 +145,7 @@
     uTipColor2: { value: new THREE.Color('#1f352a') },
     uGrassLightIntensity: { value: 1.0 },
     uShadowDarkness: { value: 0.5 },
-    uEnableShadows: { value: 1 },
+    uEnableShadows: { value: isMobile ? 0 : 1 },
     uStomperPositions: { value: Array.from({ length: MAX_STOMPERS }, () => new THREE.Vector3(9999, 0, 9999)) },
     uStomperActive: { value: new Float32Array(MAX_STOMPERS) },
     uStomperCount: { value: 0 },
@@ -192,8 +194,8 @@
       uniform sampler2D uNoiseTexture;
       uniform float uNoiseScale;
       uniform float uTime;
-      uniform vec3 uStomperPositions[8];
-      uniform float uStomperActive[8];
+      uniform vec3 uStomperPositions[${MAX_STOMPERS}];
+      uniform float uStomperActive[${MAX_STOMPERS}];
       uniform int uStomperCount;
       uniform float uStompRadius;
 
@@ -239,7 +241,7 @@
         modelPosition.y += exp(texture2D(uNoiseTexture, vGlobalUV * uNoiseScale).r) * 0.5 * uv.y;
 
         // Player stomp: bend grass away from all players
-        for (int i = 0; i < 8; i++) {
+        for (int i = 0; i < ${MAX_STOMPERS}; i++) {
           if (i >= uStomperCount) break;
           if (uStomperActive[i] < 0.5) continue;
           vec2 toPlayer = modelPosition.xz - uStomperPositions[i].xz;
@@ -355,7 +357,6 @@
   const geometry = createGrassClumpGeometry()
   const mesh = new THREE.InstancedMesh(geometry, material, INSTANCE_COUNT)
   mesh.receiveShadow = true
-  mesh.frustumCulled = false
 
   const dummy = new THREE.Object3D()
   let placed = 0
@@ -389,6 +390,8 @@
     placed++
   }
   mesh.instanceMatrix.needsUpdate = true
+  mesh.computeBoundingBox()
+  mesh.computeBoundingSphere()
 
   // --- Animate wind ---
   useTask((delta) => {

@@ -30,7 +30,7 @@
     <button onclick={joinRoom}>Join</button>
   </div>
 {:else}
-  <Canvas toneMapping={THREE.ACESFilmicToneMapping} toneMappingExposure={0.7}>
+  <Canvas toneMapping={THREE.ACESFilmicToneMapping} toneMappingExposure={0.7} dpr={Math.min(window.devicePixelRatio, 2)}>
     <Scene />
   </Canvas>
   <CharacterSelect />

@@ -17,6 +17,10 @@
   import { getRemotePlayers } from '../stores/players.svelte.js'
 
   const remotePlayers = $derived(getRemotePlayers())
+
+  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+    (navigator.maxTouchPoints > 0 && window.innerWidth < 1024)
+  const shadowMapSize = isMobile ? 1024 : 2048
 </script>
 
 <World>
@@ -34,8 +38,8 @@
     color="#ffe0a0"
     intensity={2.0}
     castShadow
-    shadow.mapSize.width={2048}
-    shadow.mapSize.height={2048}
+    shadow.mapSize.width={shadowMapSize}
+    shadow.mapSize.height={shadowMapSize}
     shadow.camera.left={-60}
     shadow.camera.right={60}
     shadow.camera.top={60}

@@ -1,16 +1,15 @@
 <script>
   import { T, useTask } from '@threlte/core'
-  import { useGltf } from '@threlte/extras'
   import * as THREE from 'three'
   import { clone as cloneSkeleton } from 'three/examples/jsm/utils/SkeletonUtils.js'
   import { characters } from '../stores/character.svelte.js'
+  import { loadModel } from '../utils/modelLoader.js'
 
   let { playerState } = $props()
 
-  // Preload all character models
-  const allModels = {}
-  for (const char of characters) {
-    allModels[char.id] = useGltf(char.model)
+  function getModelPath(charId) {
+    const char = characters.find(c => c.id === charId)
+    return char ? char.model : '/Fox.gltf'
   }
 
   // Animation
@@ -59,7 +58,7 @@
 <T.Group position.x={displayX} position.y={displayY} position.z={displayZ}>
   <T.Group rotation.y={displayRY}>
     {#key playerState.curr.char}
-      {#await allModels[playerState.curr.char || 'husky'] then value}
+      {#await loadModel(getModelPath(playerState.curr.char)) then value}
         {@const scene = cloneSkeleton(value.scene)}
         <T
           is={scene}
