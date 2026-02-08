@@ -13,8 +13,13 @@
 
   const birdScale = 2
   const flockSpeed = 6
-  const spawnDistance = 80
-  const despawnDistance = 150
+  const spawnDistance = 250
+  const despawnDistance = 400
+
+  // Wind blows along +Z (windmill faces -Z into the wind, blades spin on Z-axis)
+  // Birds fly downwind with slight per-flock variation (±25°)
+  const windAngle = 0
+  const windSpread = Math.PI * 0.14
 
   // Seeded random
   let seed = 99
@@ -27,19 +32,25 @@
     if (!gltfData || !groupRef) return
 
     const birdCount = 5 + Math.floor(rand() * 4)
-    const altitude = 15 + rand() * 15
-    const angle = rand() * Math.PI * 2
+    const altitude = 30 + rand() * 25
 
-    const startX = Math.cos(angle) * spawnDistance
-    const startZ = Math.sin(angle) * spawnDistance
-    const dirX = -Math.cos(angle)
-    const dirZ = -Math.sin(angle)
-    const rotY = Math.atan2(dirX, dirZ)
+    // Each flock gets a slight direction variation around the wind
+    const flockAngle = windAngle + (rand() - 0.5) * 2 * windSpread
+    const dirX = Math.sin(flockAngle)
+    const dirZ = Math.cos(flockAngle)
+
+    // Spawn upwind with a lateral offset so flocks spread across the sky
+    const lateralOffset = (rand() - 0.5) * spawnDistance * 1.2
+    const startX = -dirX * spawnDistance + (-dirZ) * lateralOffset
+    const startZ = -dirZ * spawnDistance + dirX * lateralOffset
+    const rotY = Math.atan2(dirX, dirZ) + Math.PI
 
     const flock = {
       group: new THREE.Group(),
       dirX,
       dirZ,
+      startX,
+      startZ,
       birds: [],
     }
 
@@ -103,8 +114,9 @@
         bird.mixer.update(delta)
       }
 
-      const pos = flock.group.position
-      const dist = Math.sqrt(pos.x * pos.x + pos.z * pos.z)
+      const dx = flock.group.position.x - flock.startX
+      const dz = flock.group.position.z - flock.startZ
+      const dist = Math.sqrt(dx * dx + dz * dz)
       if (dist > despawnDistance) {
         groupRef.remove(flock.group)
         flocks.splice(i, 1)

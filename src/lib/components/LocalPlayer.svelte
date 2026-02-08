@@ -88,6 +88,62 @@
 
     if (mixer) mixer.update(delta)
 
+    // Handle stun (cow kick): 3s on ground + 1.5s getting up
+    if (localPlayerPos.stunTimer > 0) {
+      localPlayerPos.stunTimer -= delta
+      if (localPlayerPos.stunTimer > 1.5) {
+        // Falling / on the ground
+        if (currentAction !== 'Death') {
+          const deathAction = actions['Death']
+          if (deathAction) {
+            deathAction.loop = THREE.LoopOnce
+            deathAction.clampWhenFinished = true
+          }
+          playAction('Death')
+        }
+      } else if (localPlayerPos.stunTimer > 0) {
+        // Getting up slowly
+        if (currentAction !== 'Jump_ToIdle') {
+          const getUpAction = actions['Jump_ToIdle']
+          if (getUpAction) {
+            getUpAction.loop = THREE.LoopOnce
+            getUpAction.clampWhenFinished = true
+          }
+          const prev = actions['Death']
+          const next = actions['Jump_ToIdle']
+          if (next) {
+            next.reset().play()
+            if (prev) prev.crossFadeTo(next, 0.8, true)
+            currentAction = 'Jump_ToIdle'
+          }
+        }
+      } else {
+        localPlayerPos.stunTimer = 0
+        playAction('Idle')
+      }
+      // Still update camera and network while stunned, but skip movement
+      playerQuat.setFromAxisAngle(_up, rotation)
+      if (camera) {
+        _playerPos.set(playerX, playerY, playerZ)
+        _offset.copy(idealOffset).applyQuaternion(playerQuat).add(_playerPos)
+        _lookat.copy(idealLookat).applyQuaternion(playerQuat).add(_playerPos)
+        const t = 1.0 - Math.pow(0.01, delta)
+        currentPosition.lerp(_offset, t)
+        currentLookat.lerp(_lookat, t)
+        camera.position.copy(currentPosition)
+        camera.lookAt(currentLookat)
+      }
+      sendState({
+        x: Math.round(playerX * 100) / 100,
+        y: Math.round(playerY * 100) / 100,
+        z: Math.round(playerZ * 100) / 100,
+        ry: Math.round(rotation * 1000) / 1000,
+        anim: animToShort(currentAction),
+        grounded: isGrounded,
+      })
+      return
+    }
+
     if (keys['KeyA'] || keys['ArrowLeft']) rotation += rotSpeed * delta
     if (keys['KeyD'] || keys['ArrowRight']) rotation -= rotSpeed * delta
 

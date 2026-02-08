@@ -12,6 +12,7 @@
   import Fence from './Fence.svelte'
   import Barn from './Barn.svelte'
   import Water from './Water.svelte'
+  import Cows from './Cows.svelte'
   import { getRemotePlayers } from '../stores/players.svelte.js'
 
   const remotePlayers = $derived(getRemotePlayers())
@@ -78,6 +79,9 @@
 
   <!-- Cloud ring -->
   <CloudRing />
+
+  <!-- Cows -->
+  <Cows />
 
   <!-- Birds -->
   <Birds />
