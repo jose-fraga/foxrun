@@ -28,6 +28,7 @@ export default class GameServer {
         ry: data.ry,
         anim: data.anim,
         grounded: data.grounded,
+        char: data.char,
       }
       this.players.set(conn.id, state)
 

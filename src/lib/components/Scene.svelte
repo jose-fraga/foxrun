@@ -13,6 +13,7 @@
   import Barn from './Barn.svelte'
   import Water from './Water.svelte'
   import Cows from './Cows.svelte'
+  import Deer from './Deer.svelte'
   import { getRemotePlayers } from '../stores/players.svelte.js'
 
   const remotePlayers = $derived(getRemotePlayers())
@@ -49,9 +50,9 @@
 
   <!-- Sky -->
   <Sky
-    elevation={2}
-    turbidity={10}
-    rayleigh={2}
+    elevation={1}
+    turbidity={12}
+    rayleigh={3}
     mieCoefficient={0.005}
     mieDirectionalG={0.8}
     azimuth={180}
@@ -82,6 +83,9 @@
 
   <!-- Cows -->
   <Cows />
+
+  <!-- Deer -->
+  <Deer />
 
   <!-- Birds -->
   <Birds />

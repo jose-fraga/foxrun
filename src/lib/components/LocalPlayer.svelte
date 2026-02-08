@@ -8,8 +8,16 @@
   import { animToShort } from '../stores/players.svelte.js'
   import { getTerrainHeight } from '../utils/terrain.js'
   import { localPlayerPos } from '../utils/playerPosition.js'
+  import { characters, getSelectedCharacter } from '../stores/character.svelte.js'
+  import { touchInput } from '../stores/input.js'
 
-  const gltf = useGltf('/Fox.gltf')
+  const selectedChar = $derived(getSelectedCharacter())
+
+  // Preload all character models
+  const allModels = {}
+  for (const char of characters) {
+    allModels[char.id] = useGltf(char.model)
+  }
 
   // Animation
   let mixer = null
@@ -18,9 +26,11 @@
 
   function setupAnimations(gltfData) {
     mixer = new THREE.AnimationMixer(gltfData.scene)
+    actions = {}
     for (const clip of gltfData.animations) {
       actions[clip.name] = mixer.clipAction(clip)
     }
+    currentAction = null
     playAction('Idle')
   }
 
@@ -57,7 +67,7 @@
   const gravity = 20
   const keys = {}
   const playerQuat = new THREE.Quaternion()
-  let rotation = 0
+  let rotation = $state(0)
   let rigidBody
   let isGrounded = true
   let landingTimer = 0
@@ -140,19 +150,30 @@
         ry: Math.round(rotation * 1000) / 1000,
         anim: animToShort(currentAction),
         grounded: isGrounded,
+        char: selectedChar.id,
       })
       return
     }
 
-    if (keys['KeyA'] || keys['ArrowLeft']) rotation += rotSpeed * delta
-    if (keys['KeyD'] || keys['ArrowRight']) rotation -= rotSpeed * delta
+    // Touch jump edge detection
+    if (touchInput.jump && !touchInput._prevJump && isGrounded) {
+      velocityY = jumpForce
+      isGrounded = false
+    }
+    if (!touchInput.jump && touchInput._prevJump && !isGrounded && velocityY > 0) {
+      velocityY *= 0.4
+    }
+    touchInput._prevJump = touchInput.jump
+
+    if (keys['KeyA'] || keys['ArrowLeft'] || touchInput.left) rotation += rotSpeed * delta
+    if (keys['KeyD'] || keys['ArrowRight'] || touchInput.right) rotation -= rotSpeed * delta
 
     _dir.set(0, 0, 0)
-    if (keys['KeyW'] || keys['ArrowUp']) _dir.z += 1
-    if (keys['KeyS'] || keys['ArrowDown']) _dir.z -= 1
+    if (keys['KeyW'] || keys['ArrowUp'] || touchInput.forward) _dir.z += 1
+    if (keys['KeyS'] || keys['ArrowDown'] || touchInput.backward) _dir.z -= 1
 
     const isMoving = _dir.lengthSq() > 0
-    const isSprinting = keys['ShiftLeft'] || keys['ShiftRight']
+    const isSprinting = keys['ShiftLeft'] || keys['ShiftRight'] || touchInput.sprint
     const currentSpeed = isMoving ? (isSprinting ? speed * 2 : speed) : 0
 
     if (isMoving) {
@@ -234,6 +255,7 @@
       ry: Math.round(rotation * 1000) / 1000,
       anim: animToShort(currentAction),
       grounded: isGrounded,
+      char: selectedChar.id,
     })
   })
 </script>
@@ -256,14 +278,16 @@
     <Collider shape="capsule" args={[1.0, 0.5]} friction={0} restitution={0} />
 
     <T.Group rotation.y={rotation}>
-      {#await gltf then value}
-        <T
-          is={value.scene}
-          scale={1}
-          position.y={-1.5}
-          oncreate={() => setupAnimations(value)}
-        />
-      {/await}
+      {#key selectedChar.id}
+        {#await allModels[selectedChar.id] then value}
+          <T
+            is={value.scene}
+            scale={1}
+            position.y={-1.5}
+            oncreate={() => setupAnimations(value)}
+          />
+        {/await}
+      {/key}
     </T.Group>
   </RigidBody>
 </T.Group>

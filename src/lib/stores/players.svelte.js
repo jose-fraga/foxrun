@@ -7,8 +7,8 @@ export function animToShort(name) { return ANIM_TO_SHORT[name] || 'I' }
 export function shortToAnim(code) { return ANIM_SHORT[code] || 'Idle' }
 
 class RemotePlayerState {
-  prev = { x: 0, y: 0, z: 0, ry: 0, anim: 'Idle', grounded: true, time: 0 }
-  curr = { x: 0, y: 0, z: 0, ry: 0, anim: 'Idle', grounded: true, time: 0 }
+  prev = { x: 0, y: 0, z: 0, ry: 0, anim: 'Idle', grounded: true, char: 'husky', time: 0 }
+  curr = { x: 0, y: 0, z: 0, ry: 0, anim: 'Idle', grounded: true, char: 'husky', time: 0 }
 
   update(data) {
     this.prev = { ...this.curr }
@@ -19,6 +19,7 @@ class RemotePlayerState {
       ry: data.ry,
       anim: shortToAnim(data.anim),
       grounded: data.grounded,
+      char: data.char || 'husky',
       time: performance.now(),
     }
   }

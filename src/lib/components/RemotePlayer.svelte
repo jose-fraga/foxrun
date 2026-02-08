@@ -3,10 +3,15 @@
   import { useGltf } from '@threlte/extras'
   import * as THREE from 'three'
   import { clone as cloneSkeleton } from 'three/examples/jsm/utils/SkeletonUtils.js'
+  import { characters } from '../stores/character.svelte.js'
 
   let { playerState } = $props()
 
-  const gltf = useGltf('/Fox.gltf')
+  // Preload all character models
+  const allModels = {}
+  for (const char of characters) {
+    allModels[char.id] = useGltf(char.model)
+  }
 
   // Animation
   let mixer = null
@@ -28,9 +33,6 @@
   let displayY = $state(0)
   let displayZ = $state(0)
   let displayRY = $state(0)
-
-  // Clone scene properly (SkeletonUtils handles skinned meshes)
-  let clonedScene = $state(null)
 
   useTask((delta) => {
     if (!playerState) return
@@ -56,20 +58,24 @@
 
 <T.Group position.x={displayX} position.y={displayY} position.z={displayZ}>
   <T.Group rotation.y={displayRY}>
-    {#await gltf then value}
-      {@const scene = cloneSkeleton(value.scene)}
-      <T
-        is={scene}
-        scale={1}
-        position.y={-1.5}
-        oncreate={() => {
-          mixer = new THREE.AnimationMixer(scene)
-          for (const clip of value.animations) {
-            actions[clip.name] = mixer.clipAction(clip)
-          }
-          playAction('Idle')
-        }}
-      />
-    {/await}
+    {#key playerState.curr.char}
+      {#await allModels[playerState.curr.char || 'husky'] then value}
+        {@const scene = cloneSkeleton(value.scene)}
+        <T
+          is={scene}
+          scale={1}
+          position.y={-1.5}
+          oncreate={() => {
+            mixer = new THREE.AnimationMixer(scene)
+            actions = {}
+            for (const clip of value.animations) {
+              actions[clip.name] = mixer.clipAction(clip)
+            }
+            currentAction = null
+            playAction('Idle')
+          }}
+        />
+      {/await}
+    {/key}
   </T.Group>
 </T.Group>

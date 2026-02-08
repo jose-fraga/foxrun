@@ -2,6 +2,8 @@
   import { Canvas } from "@threlte/core";
   import * as THREE from "three";
   import Scene from "./lib/components/Scene.svelte";
+  import CharacterSelect from "./lib/components/CharacterSelect.svelte";
+  import TouchControls from "./lib/components/TouchControls.svelte";
   import { connect } from "./lib/network.js";
 
   let connected = $state(false);
@@ -31,6 +33,8 @@
   <Canvas toneMapping={THREE.ACESFilmicToneMapping} toneMappingExposure={0.7}>
     <Scene />
   </Canvas>
+  <CharacterSelect />
+  <TouchControls />
 {/if}
 
 <style>
