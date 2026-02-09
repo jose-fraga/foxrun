@@ -83,6 +83,8 @@ export function connect(roomId) {
 
 export function disconnect() {
   clearInterval(sendTimer)
+  lastSentState = null
+  lastFarmerState = null
   if (socket) {
     socket.close()
     socket = null
