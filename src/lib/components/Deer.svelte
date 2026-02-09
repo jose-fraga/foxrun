@@ -8,9 +8,46 @@
   import { getRemotePlayers } from '../stores/players.svelte.js'
   import { POND_CENTER, POND_RADIUS } from '../utils/pond.js'
   import { resolveCollision } from '../utils/obstacles.js'
+  import { applyBrushPaintStyle } from '../utils/modelLoader.js'
+  import { getQuests, completeQuest } from '../stores/questProgress.svelte.js'
+
+  // Catch burst effect
+  const BURST_COUNT = 50
+  const burstPositions = new Float32Array(BURST_COUNT * 3)
+  const burstVelocities = []
+  for (let i = 0; i < BURST_COUNT; i++) {
+    burstPositions[i * 3] = 0
+    burstPositions[i * 3 + 1] = 1
+    burstPositions[i * 3 + 2] = 0
+    const angle = Math.random() * Math.PI * 2
+    const upSpeed = 3 + Math.random() * 5
+    const outSpeed = 2 + Math.random() * 3
+    burstVelocities.push({
+      x: Math.cos(angle) * outSpeed,
+      y: upSpeed,
+      z: Math.sin(angle) * outSpeed,
+    })
+  }
+  const burstGeo = new THREE.BufferGeometry()
+  burstGeo.setAttribute('position', new THREE.BufferAttribute(burstPositions, 3))
+  const burstMat = new THREE.PointsMaterial({
+    color: 0xffd700,
+    size: 0.35,
+    sizeAttenuation: true,
+    transparent: true,
+    opacity: 1,
+    depthWrite: false,
+  })
+  const burstPoints = new THREE.Points(burstGeo, burstMat)
+
+  let catchEffect = $state(false)
+  let catchPos = { x: 0, y: 0, z: 0 }
+  let catchTimer = 0
 
   const gltf = useGltf('/Deer.gltf')
   const remotePlayers = $derived(getRemotePlayers())
+  const quests = $derived(getQuests())
+  const CATCH_DIST = 2
 
   const DEER_COUNT = 5
   const WALK_SPEED = 2.0
@@ -86,6 +123,7 @@
       targetZ: z,
       group: null,
       innerGroup: null,
+      caught: false,
     }
     pickTarget(d)
     return d
@@ -161,11 +199,42 @@
       herdCenter.z += (hdz / hdd) * herdSpeed
     }
 
-    for (const d of deer) {
-      if (!d.mixer) continue
+    for (let i = 0; i < deer.length; i++) {
+      const d = deer[i]
+      if (!d.mixer || d.caught) continue
       d.mixer.update(delta)
 
+      const isSpecialDeer = i === 0 && !quests.deer
       const player = getClosestPlayerDist(d)
+
+      // Check if special deer is caught by local player
+      if (isSpecialDeer) {
+        const cdx = localPlayerPos.x - d.x
+        const cdz = localPlayerPos.z - d.z
+        const catchDist = Math.sqrt(cdx * cdx + cdz * cdz)
+        if (catchDist < CATCH_DIST) {
+          completeQuest('deer')
+          d.caught = true
+          if (d.group) d.group.visible = false
+          // Trigger burst at deer position
+          catchEffect = true
+          catchTimer = 0
+          catchPos = { x: d.x, y: getTerrainHeight(d.x, d.z), z: d.z }
+          // Reset burst particles
+          const pos = burstGeo.attributes.position.array
+          for (let b = 0; b < BURST_COUNT; b++) {
+            pos[b * 3] = 0
+            pos[b * 3 + 1] = 1
+            pos[b * 3 + 2] = 0
+          }
+          burstGeo.attributes.position.needsUpdate = true
+          burstMat.opacity = 1
+          continue
+        }
+      }
+
+      // Special deer runs faster
+      const fleeSpeed = isSpecialDeer ? RUN_SPEED * 1.3 : RUN_SPEED
 
       // Flee if a player is close
       if (player.dist < FLEE_DIST) {
@@ -185,8 +254,8 @@
           const jx = nx + (rand() - 0.5) * 0.3
           const jz = nz + (rand() - 0.5) * 0.3
 
-          d.x += jx * RUN_SPEED * delta
-          d.z += jz * RUN_SPEED * delta
+          d.x += jx * fleeSpeed * delta
+          d.z += jz * fleeSpeed * delta
 
           const targetRotY = Math.atan2(jx, jz)
           let dAngle = targetRotY - d.rotY
@@ -213,8 +282,8 @@
           if (awayDist > 0.01) {
             const nx = awayX / awayDist
             const nz = awayZ / awayDist
-            d.x += nx * RUN_SPEED * delta
-            d.z += nz * RUN_SPEED * delta
+            d.x += nx * fleeSpeed * delta
+            d.z += nz * fleeSpeed * delta
 
             const targetRotY = Math.atan2(nx, nz)
             let dAngle = targetRotY - d.rotY
@@ -305,28 +374,59 @@
         d.innerGroup.rotation.y = d.rotY
       }
     }
+
+    // Animate catch burst
+    if (catchEffect) {
+      catchTimer += delta
+      const pos = burstGeo.attributes.position.array
+      for (let b = 0; b < BURST_COUNT; b++) {
+        const v = burstVelocities[b]
+        pos[b * 3] += v.x * delta
+        pos[b * 3 + 1] += v.y * delta
+        pos[b * 3 + 2] += v.z * delta
+        v.y -= 6 * delta
+      }
+      burstGeo.attributes.position.needsUpdate = true
+      burstMat.opacity = Math.max(0, 1 - catchTimer / 1.5)
+      if (catchTimer > 1.5) {
+        catchEffect = false
+      }
+    }
   })
 </script>
 
 {#await gltf then value}
+  {@const _styled = applyBrushPaintStyle(value)}
   {#each deer as d, i}
-    {@const scene = cloneSkeleton(value.scene)}
-    <T.Group
-      position.x={d.x}
-      position.y={getTerrainHeight(d.x, d.z)}
-      position.z={d.z}
-      oncreate={(ref) => { d.group = ref }}
-    >
+    {#if !d.caught}
+      {@const scene = cloneSkeleton(value.scene)}
       <T.Group
-        rotation.y={d.rotY}
-        oncreate={(ref) => { d.innerGroup = ref }}
+        position.x={d.x}
+        position.y={getTerrainHeight(d.x, d.z)}
+        position.z={d.z}
+        oncreate={(ref) => { d.group = ref }}
       >
-        <T
-          is={scene}
-          scale={1}
-          oncreate={() => setupDeer(d, value, scene)}
-        />
+        {#if i === 0 && !quests.deer}
+          <T.PointLight color="#ffd700" intensity={3} distance={12} position.y={2} />
+        {/if}
+        <T.Group
+          rotation.y={d.rotY}
+          oncreate={(ref) => { d.innerGroup = ref }}
+        >
+          <T
+            is={scene}
+            scale={1}
+            oncreate={() => setupDeer(d, value, scene)}
+          />
+        </T.Group>
       </T.Group>
-    </T.Group>
+    {/if}
   {/each}
 {/await}
+
+{#if catchEffect}
+  <T.Group position={[catchPos.x, catchPos.y, catchPos.z]}>
+    <T is={burstPoints} />
+    <T.PointLight color="#ffd700" intensity={5} distance={15} position.y={2} />
+  </T.Group>
+{/if}

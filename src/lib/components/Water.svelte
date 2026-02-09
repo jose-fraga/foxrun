@@ -3,6 +3,7 @@
   import * as THREE from 'three'
   import { getTerrainHeight } from '../utils/terrain.js'
   import { POND_CENTER, POND_RADIUS } from '../utils/pond.js'
+  import { gradientMap } from '../utils/modelLoader.js'
 
   // --- Circular geometry with concentric rings (smooth edges + terrain conform) ---
   const WATER_LIFT = 0.5
@@ -60,15 +61,16 @@
     tex.wrapS = tex.wrapT = THREE.RepeatWrapping
   })
 
-  const waterMaterial = new THREE.MeshStandardMaterial({
-    color: 0x3a7a6a,
-    metalness: 0.6,
-    roughness: 0.3,
+  const waterMaterial = new THREE.MeshToonMaterial({
+    color: 0x3a6a8a,
+    gradientMap,
     normalMap: waterNormalMap,
     normalMapType: THREE.ObjectSpaceNormalMap,
     transparent: true,
     opacity: 0.85,
     side: THREE.DoubleSide,
+    emissive: 0x3a6a8a,
+    emissiveIntensity: 0.15,
   })
   waterMaterial.normalMap.wrapS = THREE.RepeatWrapping
   waterMaterial.normalMap.wrapT = THREE.RepeatWrapping
@@ -125,10 +127,11 @@
   }
   bedPos.needsUpdate = true
 
-  const bedMaterial = new THREE.MeshStandardMaterial({
+  const bedMaterial = new THREE.MeshToonMaterial({
     color: 0x1a3a2a,
-    roughness: 1.0,
-    metalness: 0.0,
+    gradientMap,
+    emissive: 0x1a3a2a,
+    emissiveIntensity: 0.15,
   })
   const bedMesh = new THREE.Mesh(bedGeo, bedMaterial)
   bedMesh.position.set(POND_CENTER[0], 0, POND_CENTER[1])

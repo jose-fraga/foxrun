@@ -34,8 +34,8 @@
 </script>
 
 <!-- Terrain mesh -->
-<T.Mesh {geometry} receiveShadow>
-  <T.MeshStandardMaterial color="#648f5a" />
+<T.Mesh {geometry}>
+  <T.MeshBasicMaterial color="#5b8c52" />
 </T.Mesh>
 
 <!-- Physics heightfield collider -->

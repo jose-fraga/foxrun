@@ -28,5 +28,5 @@
 </script>
 
 {#if cloudRingScene}
-  <T is={cloudRingScene} scale={0.01} position.y={8} />
+  <T is={cloudRingScene} scale={0.03} position.y={25} />
 {/if}

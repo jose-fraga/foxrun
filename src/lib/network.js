@@ -1,4 +1,5 @@
 import PartySocket from 'partysocket'
+import { completeQuest } from './stores/questProgress.svelte.js'
 
 const SEND_RATE = 1000 / 20 // 20 Hz
 
@@ -54,6 +55,9 @@ export function connect(roomId) {
         break
       case 'farmer_host':
         onFarmerHost?.()
+        break
+      case 'quest_complete':
+        completeQuest(data.quest)
         break
     }
   })

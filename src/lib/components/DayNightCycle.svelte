@@ -1,6 +1,5 @@
 <script>
   import { T, useTask } from '@threlte/core'
-  import { Sky } from '@threlte/extras'
   import * as THREE from 'three'
   import { useThrelte } from '@threlte/core'
   import { dayNight } from '../stores/dayNight.js'
@@ -58,9 +57,6 @@
   let sunIntensity = $derived(lerp(SUNSET.sunIntensity, NIGHT.sunIntensity, nightFactor))
   let hemiIntensity = $derived(lerp(SUNSET.hemiIntensity, NIGHT.hemiIntensity, nightFactor))
   let ambientIntensity = $derived(lerp(SUNSET.ambientIntensity, NIGHT.ambientIntensity, nightFactor))
-  let skyElevation = $derived(lerp(SUNSET.skyElevation, NIGHT.skyElevation, nightFactor))
-  let skyTurbidity = $derived(lerp(SUNSET.skyTurbidity, NIGHT.skyTurbidity, nightFactor))
-  let skyRayleigh = $derived(lerp(SUNSET.skyRayleigh, NIGHT.skyRayleigh, nightFactor))
   let starsVisible = $derived(nightFactor > 0.3)
 
   // --- Static white stars (custom Points, no library component) ---
@@ -92,6 +88,62 @@
   starPoints.renderOrder = 100
   starPoints.frustumCulled = false
 
+  // --- Toon sky dome (crisp painted bands) ---
+  const skyGeo = new THREE.SphereGeometry(500, 32, 16)
+  const skyUniforms = { uNightFactor: { value: 0 } }
+  const skyMat = new THREE.ShaderMaterial({
+    side: THREE.BackSide,
+    depthWrite: false,
+    fog: false,
+    uniforms: skyUniforms,
+    vertexShader: `
+      varying vec3 vWorldPosition;
+      void main() {
+        vec4 worldPos = modelMatrix * vec4(position, 1.0);
+        vWorldPosition = worldPos.xyz;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `,
+    fragmentShader: `
+      uniform float uNightFactor;
+      varying vec3 vWorldPosition;
+      void main() {
+        vec3 dir = normalize(vWorldPosition);
+        float elev = max(dir.y, 0.0);
+
+        // Sunset palette (3 smooth bands)
+        vec3 dayLow  = vec3(1.0, 0.83, 0.66);
+        vec3 dayMid  = vec3(0.53, 0.81, 0.92);
+        vec3 dayHigh = vec3(0.36, 0.55, 0.78);
+
+        // Night palette (3 smooth bands)
+        vec3 nightLow  = vec3(0.04, 0.04, 0.16);
+        vec3 nightMid  = vec3(0.02, 0.02, 0.12);
+        vec3 nightHigh = vec3(0.01, 0.01, 0.08);
+
+        vec3 dayColor = mix(dayLow, dayMid, smoothstep(0.0, 0.3, elev));
+        dayColor = mix(dayColor, dayHigh, smoothstep(0.3, 0.7, elev));
+
+        vec3 nightColor = mix(nightLow, nightMid, smoothstep(0.0, 0.3, elev));
+        nightColor = mix(nightColor, nightHigh, smoothstep(0.3, 0.7, elev));
+
+        vec3 sky = mix(dayColor, nightColor, uNightFactor);
+
+        // Toon sun disc — sets below horizon at night
+        float sunY = 6.0 - uNightFactor * 30.0;
+        vec3 sunDir = normalize(vec3(0.0, sunY, -200.0));
+        float sunAngle = dot(dir, sunDir);
+        float sunDisc = step(0.9995, sunAngle);
+        vec3 sunCore = vec3(1.0, 0.95, 0.7);
+        sky = mix(sky, sunCore, sunDisc);
+
+        gl_FragColor = vec4(sky, 1.0);
+      }
+    `
+  })
+  const skyMesh = new THREE.Mesh(skyGeo, skyMat)
+  skyMesh.frustumCulled = false
+
   const { camera } = useThrelte()
 
   // Refs for objects that need imperative updates
@@ -100,6 +152,7 @@
   let sunLight = $state(null)
   let ambientLight = $state(null)
   let starsGroup = $state(null)
+  let skyDome = $state(null)
 
   // Skip redundant color updates during hold phases (50% of the cycle)
   let prevNightFactor = -1
@@ -157,10 +210,18 @@
       }
     }
 
-    // Lock stars to camera so they don't shift when moving
-    if (starsGroup && camera.current) {
+    // Update toon sky dome
+    skyUniforms.uNightFactor.value = nightFactor
+
+    // Lock stars + sky dome to camera so they don't shift when moving
+    if (camera.current) {
       const cam = camera.current
-      starsGroup.position.set(cam.position.x, cam.position.y, cam.position.z)
+      if (starsGroup) {
+        starsGroup.position.set(cam.position.x, cam.position.y, cam.position.z)
+      }
+      if (skyDome) {
+        skyDome.position.set(cam.position.x, cam.position.y, cam.position.z)
+      }
     }
   })
 </script>
@@ -195,15 +256,8 @@
   oncreate={(ref) => { ambientLight = ref }}
 />
 
-<!-- Sky -->
-<Sky
-  elevation={skyElevation}
-  turbidity={skyTurbidity}
-  rayleigh={skyRayleigh}
-  mieCoefficient={0.005}
-  mieDirectionalG={0.8}
-  azimuth={180}
-/>
+<!-- Toon sky dome -->
+<T is={skyMesh} oncreate={(ref) => { skyDome = ref }} />
 
 <!-- Stars (visible at night, locked to camera) -->
 <T.Group oncreate={(ref) => { starsGroup = ref }} visible={starsVisible}>

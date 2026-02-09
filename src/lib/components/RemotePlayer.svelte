@@ -7,6 +7,9 @@
 
   let { playerState } = $props()
 
+  // Derive char reactively so {#key} reliably detects character changes
+  let remoteChar = $derived(playerState.curr.char)
+
   function getModelPath(charId) {
     const char = characters.find(c => c.id === charId)
     return char ? char.model : '/Fox.gltf'
@@ -57,8 +60,8 @@
 
 <T.Group position.x={displayX} position.y={displayY} position.z={displayZ}>
   <T.Group rotation.y={displayRY}>
-    {#key playerState.curr.char}
-      {#await loadModel(getModelPath(playerState.curr.char)) then value}
+    {#key remoteChar}
+      {#await loadModel(getModelPath(remoteChar)) then value}
         {@const scene = cloneSkeleton(value.scene)}
         <T
           is={scene}

@@ -7,6 +7,7 @@
   import { setNearFarmer, openChat, getFarmerChat } from '../stores/farmerChat.svelte.js'
   import { farmerSync } from '../stores/farmerSync.js'
   import { sendFarmerState } from '../network.js'
+  import { applyBrushPaintStyle } from '../utils/modelLoader.js'
 
   const gltf = useGltf('/Farmer.glb')
 
@@ -46,6 +47,8 @@
   let bubbleTimer = 0
   let lastMsgCount = 0
   let isThinking = false
+  let hasGreeted = false
+  let greetTimer = 0
 
   function pickTarget() {
     const angle = rand() * Math.PI * 2
@@ -119,6 +122,8 @@
       if (!chat.nearFarmer) setNearFarmer(true)
     } else {
       if (chat.nearFarmer) setNearFarmer(false)
+      hasGreeted = false
+      greetTimer = 0
     }
 
     // --- Host: run farmer AI and broadcast state ---
@@ -138,8 +143,14 @@
 
         if (chat.open) {
           playAction('CharacterArmature|Idle')
-        } else {
+        } else if (!hasGreeted) {
           playAction('CharacterArmature|Wave')
+          greetTimer += delta
+          if (greetTimer >= 1.5) {
+            hasGreeted = true
+          }
+        } else {
+          playAction('CharacterArmature|Idle')
         }
       } else {
         // Normal wandering behavior
@@ -208,6 +219,7 @@
 </script>
 
 {#await gltf then value}
+  {@const _styled = applyBrushPaintStyle(value)}
   <T.Group
     position.x={farmer.x}
     position.y={getTerrainHeight(farmer.x, farmer.z)}

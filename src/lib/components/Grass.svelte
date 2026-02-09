@@ -6,6 +6,7 @@
   import { getRemotePlayers } from '../stores/players.svelte.js'
   import { POND_CENTER, POND_RADIUS } from '../utils/pond.js'
   import { dayNight } from '../stores/dayNight.js'
+  import { getQuests } from '../stores/questProgress.svelte.js'
 
   const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
     (navigator.maxTouchPoints > 0 && window.innerWidth < 1024)
@@ -141,9 +142,9 @@
     uNoiseTexture: { value: noiseTexture },
     uNoiseScale: { value: 1.5 },
     uGrassAlphaTexture: { value: grassAlphaTexture },
-    uBaseColor: { value: new THREE.Color('#313f1b') },
-    uTipColor1: { value: new THREE.Color('#9bd38d') },
-    uTipColor2: { value: new THREE.Color('#1f352a') },
+    uBaseColor: { value: new THREE.Color('#263014') },
+    uTipColor1: { value: new THREE.Color('#7ab06e') },
+    uTipColor2: { value: new THREE.Color('#182a1f') },
     uGrassLightIntensity: { value: 1.0 },
     uShadowDarkness: { value: 0.5 },
     uEnableShadows: { value: isMobile ? 0 : 1 },
@@ -344,6 +345,14 @@
           #endif
         }
 
+        // Brush-painted toon bands (3-step quantized luminance)
+        float lum = dot(grassFinalColor, vec3(0.299, 0.587, 0.114));
+        float toonLum = 0.15 + step(0.3, lum) * 0.15 + step(0.6, lum) * 0.2;
+        grassFinalColor = grassFinalColor * toonLum / max(lum, 0.001);
+
+        // Emissive boost for night visibility
+        grassFinalColor += diffuseColor.rgb * 0.15;
+
         #include <alphatest_fragment>
         gl_FragColor = vec4(grassFinalColor, 1.0);
 
@@ -374,6 +383,12 @@
     const dxPond = x - POND_CENTER[0]
     const dzPond = z - POND_CENTER[1]
     if (dxPond * dxPond + dzPond * dzPond < (POND_RADIUS + 1) * (POND_RADIUS + 1)) continue
+
+    // Skip escape hole area
+    const _q = getQuests()
+    const dxHole = x - _q.holeX
+    const dzHole = z - _q.holeZ
+    if (dxHole * dxHole + dzHole * dzHole < 16) continue
 
     // Inside fence: always place. Beyond: probability falls off with distance
     if (beyondDist > 0) {

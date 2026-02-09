@@ -1,27 +1,54 @@
 <script>
   import { T, useTask } from '@threlte/core'
-  import { useGltf } from '@threlte/extras'
   import * as THREE from 'three'
+  import { dayNight } from '../stores/dayNight.js'
 
-  const birdGltf = useGltf('/flying_bird/scene.gltf')
+  const birdMat = new THREE.MeshBasicMaterial({
+    color: 0x000000,
+    side: THREE.DoubleSide,
+  })
+
+  // Super low-poly wing: single triangle
+  const wingGeo = new THREE.BufferGeometry()
+  wingGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array([
+    0, 0, 0.2,
+    0, 0, -0.2,
+    1.0, 0, 0,
+  ]), 3))
+  wingGeo.computeVertexNormals()
+
+  // Body: 3-sided cone pointing forward
+  const bodyGeo = new THREE.ConeGeometry(0.12, 0.7, 3)
+  bodyGeo.rotateX(-Math.PI / 2)
+
+  function createBird(phase) {
+    const group = new THREE.Group()
+    group.add(new THREE.Mesh(bodyGeo, birdMat))
+
+    const left = new THREE.Mesh(wingGeo, birdMat)
+    left.position.x = 0.08
+    group.add(left)
+
+    const right = new THREE.Mesh(wingGeo, birdMat)
+    right.position.x = -0.08
+    right.scale.x = -1
+    group.add(right)
+
+    return { group, left, right, phase }
+  }
 
   let groupRef
-  let gltfData = null
   let flocks = []
   let nextFlockTime = 5
   let elapsed = 0
 
-  const birdScale = 2
+  const birdScale = 2.5
   const flockSpeed = 6
   const spawnDistance = 250
   const despawnDistance = 400
-
-  // Wind blows along +Z (windmill faces -Z into the wind, blades spin on Z-axis)
-  // Birds fly downwind with slight per-flock variation (±25°)
   const windAngle = 0
   const windSpread = Math.PI * 0.14
 
-  // Seeded random
   let seed = 99
   function rand() {
     seed = (seed * 16807 + 0) % 2147483647
@@ -29,17 +56,13 @@
   }
 
   function spawnFlock() {
-    if (!gltfData || !groupRef) return
+    if (!groupRef) return
 
     const birdCount = 5 + Math.floor(rand() * 4)
-    const altitude = 30 + rand() * 25
-
-    // Each flock gets a slight direction variation around the wind
+    const altitude = 80 + rand() * 40
     const flockAngle = windAngle + (rand() - 0.5) * 2 * windSpread
     const dirX = Math.sin(flockAngle)
     const dirZ = Math.cos(flockAngle)
-
-    // Spawn upwind with a lateral offset so flocks spread across the sky
     const lateralOffset = (rand() - 0.5) * spawnDistance * 1.2
     const startX = -dirX * spawnDistance + (-dirZ) * lateralOffset
     const startZ = -dirZ * spawnDistance + dirX * lateralOffset
@@ -66,73 +89,50 @@
       const backX = -row * 2 * dirX
       const backZ = -row * 2 * dirZ
 
-      const birdScene = gltfData.scene.clone()
-      birdScene.scale.setScalar(birdScale)
-      birdScene.position.set(
-        perpX + backX,
-        (rand() - 0.5) * 0.5,
-        perpZ + backZ
-      )
-      birdScene.rotation.y = rotY
+      const bird = createBird(rand() * Math.PI * 2)
+      bird.group.scale.setScalar(birdScale)
+      bird.group.position.set(perpX + backX, (rand() - 0.5) * 0.5, perpZ + backZ)
+      bird.group.rotation.y = rotY
+      bird.flapSpeed = 4 + rand() * 3
 
-      // Set up animation
-      const mixer = new THREE.AnimationMixer(birdScene)
-      const clip = gltfData.animations[0]
-      if (clip) {
-        const action = mixer.clipAction(clip)
-        action.play()
-        action.time = rand() * 2
-      }
-
-      flock.group.add(birdScene)
-      flock.birds.push({ mixer })
+      flock.group.add(bird.group)
+      flock.birds.push(bird)
     }
 
     flocks.push(flock)
   }
-
-  birdGltf.then((data) => {
-    gltfData = data
-  })
 
   useTask((delta) => {
     if (!groupRef) return
 
     elapsed += delta
 
-    if (elapsed > nextFlockTime) {
+    const isDay = dayNight.sunFactor > 0.5
+
+    if (isDay && elapsed > nextFlockTime) {
       spawnFlock()
       nextFlockTime = elapsed + 15 + rand() * 30
     }
 
     for (let i = flocks.length - 1; i >= 0; i--) {
       const flock = flocks[i]
+      flock.group.visible = isDay
+      if (!isDay) continue
+
       flock.group.position.x += flock.dirX * flockSpeed * delta
       flock.group.position.z += flock.dirZ * flockSpeed * delta
 
+      // Animate wing flapping
       for (const bird of flock.birds) {
-        bird.mixer.update(delta)
+        const flap = Math.sin(elapsed * bird.flapSpeed + bird.phase) * 0.6
+        bird.left.rotation.z = flap
+        bird.right.rotation.z = -flap
       }
 
       const dx = flock.group.position.x - flock.startX
       const dz = flock.group.position.z - flock.startZ
       const dist = Math.sqrt(dx * dx + dz * dz)
       if (dist > despawnDistance) {
-        // Dispose geometry/materials to prevent memory leaks
-        flock.group.traverse((child) => {
-          if (child.isMesh) {
-            child.geometry?.dispose()
-            if (Array.isArray(child.material)) {
-              child.material.forEach(m => m.dispose())
-            } else {
-              child.material?.dispose()
-            }
-          }
-        })
-        for (const bird of flock.birds) {
-          bird.mixer.stopAllAction()
-          bird.mixer.uncacheRoot(bird.mixer.getRoot())
-        }
         groupRef.remove(flock.group)
         flocks.splice(i, 1)
       }

@@ -3,6 +3,7 @@
   import { useGltf } from '@threlte/extras'
   import * as THREE from 'three'
   import { addObstacle } from '../utils/obstacles.js'
+  import { applyBrushPaintStyle } from '../utils/modelLoader.js'
 
   addObstacle(0, 0, 3)
 
@@ -15,7 +16,6 @@
     scene.traverse((child) => {
       if (child.isMesh) {
         child.castShadow = true
-        child.receiveShadow = true
       }
       const name = (child.name || '').toLowerCase()
       if (name.includes('blade') || name.includes('fan') || name.includes('rotor') || name.includes('wing') || name.includes('propeller') || name.includes('sail')) {
@@ -32,6 +32,7 @@
 </script>
 
 {#await gltf then value}
+  {@const _styled = applyBrushPaintStyle(value)}
   <T
     is={value.scene}
     scale={3}

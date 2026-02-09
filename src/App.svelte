@@ -6,7 +6,10 @@
   import CharacterSelect from "./lib/components/CharacterSelect.svelte";
   import TouchControls from "./lib/components/TouchControls.svelte";
   import FarmerChat from "./lib/components/FarmerChat.svelte";
-  import { connect } from "./lib/network.js";
+  import QuestHUD from "./lib/components/QuestHUD.svelte";
+  import VictoryScreen from "./lib/components/VictoryScreen.svelte";
+  import { connect, disconnect } from "./lib/network.js";
+  import { resetQuests } from "./lib/stores/questProgress.svelte.js";
 
   let connected = $state(false);
   let fading = $state(false);
@@ -51,10 +54,39 @@
       const el = document.getElementById('loading-screen');
       if (el) {
         el.classList.add('fade-out');
-        setTimeout(() => el.remove(), 700);
+        setTimeout(() => { el.style.display = 'none'; el.classList.remove('fade-out'); }, 700);
       }
       THREE.DefaultLoadingManager.onProgress = undefined;
     }, 1000);
+  }
+
+  function handlePlayAgain() {
+    // Show loading screen and reset progress
+    const loadEl = document.getElementById('loading-screen');
+    if (loadEl) {
+      loadEl.style.display = '';
+      loadEl.classList.remove('fade-out');
+    }
+    const bar = document.getElementById('progress-fill');
+    if (bar) bar.style.width = '0%';
+
+    THREE.DefaultLoadingManager.onProgress = (_url, loaded, total) => {
+      const fill = document.getElementById('progress-fill');
+      if (fill) {
+        fill.style.width = Math.round((loaded / total) * 100) + '%';
+      }
+    };
+
+    disconnect();
+    resetQuests();
+    connected = false;
+    showLobby = false;
+    fading = false;
+    // Let the DOM unmount the game scene, then reconnect
+    setTimeout(() => {
+      connect(roomId);
+      connected = true;
+    }, 100);
   }
 
   function handleKeydown(e) {
@@ -75,7 +107,7 @@
   <!-- UI overlay -->
   <div class="lobby" class:fading>
     <div class="title-layer">
-      <h1>Fox Run</h1>
+      <h1>Beyond the Fence</h1>
     </div>
     <div class="controls-layer">
       <div class="controls">
@@ -99,6 +131,8 @@
   <CharacterSelect />
   <TouchControls />
   <FarmerChat />
+  <QuestHUD />
+  <VictoryScreen onplayagain={handlePlayAgain} />
 {/if}
 
 <style>
@@ -148,13 +182,13 @@
   }
 
   .title-layer h1 {
-    font-size: 5rem;
+    font-size: 4rem;
     color: white;
     text-shadow:
       3px 4px 0 rgba(0, 0, 0, 0.4),
       0 0 60px rgba(255, 200, 50, 0.25),
       0 0 120px rgba(255, 150, 50, 0.1);
-    letter-spacing: 6px;
+    letter-spacing: 4px;
     white-space: nowrap;
     user-select: none;
   }
@@ -220,8 +254,8 @@
 
   @media (max-width: 768px) {
     .title-layer h1 {
-      font-size: 3rem;
-      letter-spacing: 3px;
+      font-size: 2.2rem;
+      letter-spacing: 2px;
     }
     .title-layer {
       top: 15%;

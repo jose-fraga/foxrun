@@ -2,6 +2,7 @@
   import { T } from '@threlte/core'
   import { useGltf } from '@threlte/extras'
   import { addObstacle } from '../utils/obstacles.js'
+  import { applyBrushPaintStyle } from '../utils/modelLoader.js'
 
   // Left wall (runs along Z at the barn's left edge)
   addObstacle(45, -30, 2.5)
@@ -28,13 +29,13 @@
     scene.traverse((child) => {
       if (child.isMesh) {
         child.castShadow = true
-        child.receiveShadow = true
       }
     })
   }
 </script>
 
 {#await gltf then value}
+  {@const _styled = applyBrushPaintStyle(value)}
   <T
     is={value.scene}
     scale={5}

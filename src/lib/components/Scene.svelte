@@ -16,6 +16,8 @@
   import Flowers from './Flowers.svelte'
   import DayNightCycle from './DayNightCycle.svelte'
   import Fireflies from './Fireflies.svelte'
+  import GoldenBone from './GoldenBone.svelte'
+  import EscapeHole from './EscapeHole.svelte'
   import { getRemotePlayers } from '../stores/players.svelte.js'
 
   let { onready } = $props()
@@ -79,4 +81,10 @@
 
   <!-- Birds -->
   <Birds />
+
+  <!-- Quest: Golden Bone dig site -->
+  <GoldenBone />
+
+  <!-- Quest: Escape hole in fence -->
+  <EscapeHole />
 </World>

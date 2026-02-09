@@ -11,8 +11,11 @@
   import { touchInput } from '../stores/input.js'
   import { loadModel } from '../utils/modelLoader.js'
   import { getFarmerChat } from '../stores/farmerChat.svelte.js'
+  import { getQuests, setCinematicDone } from '../stores/questProgress.svelte.js'
 
   let { onready } = $props()
+
+  const quests = $derived(getQuests())
 
   const selectedChar = $derived(getSelectedCharacter())
 
@@ -81,8 +84,18 @@
   let playerZ = -40
   let velocityY = 0
 
+  // Escape cinematic
+  let escapeCinematic = false
+  let escapeTimer = 0
+  const ESCAPE_DURATION = 5
+  const escapeCamStart = new THREE.Vector3()
+  const escapeLookStart = new THREE.Vector3()
+  const escapeCamEnd = new THREE.Vector3()
+  const escapeLookEnd = new THREE.Vector3()
+
   function onKeyDown(e) {
     if (getFarmerChat().open) return
+    if (escapeCinematic) return
     keys[e.code] = true
     if (e.code === 'Space' && isGrounded) {
       velocityY = jumpForce
@@ -103,6 +116,77 @@
     if (!rigidBody) return
 
     if (mixer) mixer.update(delta)
+
+    // Escape cinematic
+    if (quests.escaped && !quests.cinematicDone) {
+      if (!escapeCinematic) {
+        escapeCinematic = true
+        escapeTimer = 0
+        // Capture current camera state
+        if (camera) {
+          escapeCamStart.copy(camera.position)
+          escapeLookStart.copy(currentLookat)
+        }
+        // Target: camera on the other side of the fence, looking back
+        const hx = quests.holeX
+        const hz = quests.holeZ
+        const holeY = getTerrainHeight(hx, hz)
+        const escTargetZ = hz - 12
+        escapeCamEnd.set(hx + 6, holeY + 5, escTargetZ - 4)
+        escapeLookEnd.set(hx, holeY + 2, escTargetZ)
+      }
+
+      escapeTimer += delta
+
+      // Auto-walk player toward hole, then through to the other side
+      const hx = quests.holeX
+      const hz = quests.holeZ
+      const escTargetZ = hz - 12
+      const targetZ = escapeTimer < ESCAPE_DURATION * 0.5 ? hz : escTargetZ
+      const toDx = hx - playerX
+      const toDz = targetZ - playerZ
+      const toDist = Math.sqrt(toDx * toDx + toDz * toDz)
+      if (toDist > 1) {
+        const walkSpeed = 8
+        playerX += (toDx / toDist) * walkSpeed * delta
+        playerZ += (toDz / toDist) * walkSpeed * delta
+        rotation = Math.atan2(-toDx, -toDz)
+        playAction('Walk')
+      } else if (escapeTimer > ESCAPE_DURATION * 0.5) {
+        playAction('Idle')
+      }
+
+      playerY = getTerrainHeight(playerX, playerZ) + 1.5
+      localPlayerPos.x = playerX
+      localPlayerPos.y = playerY
+      localPlayerPos.z = playerZ
+      rigidBody.setTranslation({ x: playerX, y: playerY, z: playerZ }, true)
+      rigidBody.setLinvel({ x: 0, y: 0, z: 0 }, true)
+
+      // Smooth camera lerp
+      if (camera) {
+        const t = Math.min(escapeTimer / ESCAPE_DURATION, 1)
+        const ease = t * t * (3 - 2 * t) // smoothstep
+        camera.position.lerpVectors(escapeCamStart, escapeCamEnd, ease)
+        _lookat.lerpVectors(escapeLookStart, escapeLookEnd, ease)
+        camera.lookAt(_lookat)
+      }
+
+      if (escapeTimer >= ESCAPE_DURATION) {
+        setCinematicDone()
+      }
+
+      sendState({
+        x: Math.round(playerX * 100) / 100,
+        y: Math.round(playerY * 100) / 100,
+        z: Math.round(playerZ * 100) / 100,
+        ry: Math.round(rotation * 1000) / 1000,
+        anim: animToShort(currentAction),
+        grounded: true,
+        char: selectedChar.id,
+      })
+      return
+    }
 
     // Handle stun (cow kick): 3s on ground + 1.5s getting up
     if (localPlayerPos.stunTimer > 0) {
