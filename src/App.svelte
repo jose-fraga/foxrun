@@ -11,6 +11,9 @@
   import { connect, disconnect } from "./lib/network.js";
   import "./lib/stores/players.svelte.js";
   import { resetQuests } from "./lib/stores/questProgress.svelte.js";
+  import { getInteractionPrompt } from "./lib/stores/interactionPrompt.svelte.js";
+
+  const prompt = $derived(getInteractionPrompt());
 
   let connected = $state(false);
   let showLobby = $state(true);
@@ -113,6 +116,9 @@
   <CharacterSelect />
   <TouchControls />
   <FarmerChat />
+  {#if prompt}
+    <div class="interaction-prompt">{prompt}</div>
+  {/if}
   <QuestHUD />
   <VictoryScreen onplayagain={handlePlayAgain} />
 {/if}
@@ -222,6 +228,22 @@
   }
   .controls button:hover {
     transform: scale(1.1);
+  }
+
+  .interaction-prompt {
+    position: fixed;
+    bottom: 18%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.65);
+    color: #fff;
+    padding: 0.5rem 1.2rem;
+    border-radius: 8px;
+    font-family: "permanent-marker", sans-serif;
+    font-size: 0.9rem;
+    pointer-events: none;
+    z-index: 500;
+    white-space: nowrap;
   }
 
   @media (max-width: 768px) {

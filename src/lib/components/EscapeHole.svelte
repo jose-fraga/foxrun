@@ -5,6 +5,7 @@
   import { localPlayerPos } from '../utils/playerPosition.js'
   import { getQuests, allQuestsComplete, setEscaped } from '../stores/questProgress.svelte.js'
   import { getFarmerChat } from '../stores/farmerChat.svelte.js'
+  import { setInteractionPrompt } from '../stores/interactionPrompt.svelte.js'
 
   const INTERACT_DIST = 4
   const holeX = $derived(getQuests().holeX)
@@ -54,6 +55,7 @@
   function handleKeydown(e) {
     if (e.code === 'KeyE' && nearHole && ready) {
       if (getFarmerChat().open) return
+      setInteractionPrompt('')
       setEscaped()
     }
   }
@@ -67,7 +69,10 @@
     const dx = localPlayerPos.x - holeX
     const dz = localPlayerPos.z - holeZ
     const dist = Math.sqrt(dx * dx + dz * dz)
+    const wasNear = nearHole
     nearHole = dist < INTERACT_DIST
+    if (nearHole && !wasNear) setInteractionPrompt('Press E to Escape')
+    if (!nearHole && wasNear) setInteractionPrompt('')
 
     // Animate swirling particles
     const pos = particleGeo.attributes.position.array
@@ -99,35 +104,3 @@
   </T.Group>
 {/if}
 
-{#if nearHole && ready}
-  <div class="prompt">
-    Press <kbd>E</kbd> to Escape
-  </div>
-{/if}
-
-<style>
-  .prompt {
-    position: fixed;
-    bottom: 18%;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(0, 0, 0, 0.65);
-    color: #f4d03f;
-    padding: 0.5rem 1.2rem;
-    border-radius: 8px;
-    font-family: "permanent-marker", sans-serif;
-    font-size: 1rem;
-    pointer-events: none;
-    z-index: 500;
-    white-space: nowrap;
-    text-shadow: 0 0 10px rgba(244, 208, 63, 0.5);
-  }
-  .prompt kbd {
-    background: rgba(244, 208, 63, 0.2);
-    border: 1px solid rgba(244, 208, 63, 0.4);
-    border-radius: 3px;
-    padding: 0.1rem 0.35rem;
-    font-family: inherit;
-    font-weight: bold;
-  }
-</style>

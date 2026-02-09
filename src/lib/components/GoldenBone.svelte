@@ -5,6 +5,7 @@
   import { localPlayerPos } from '../utils/playerPosition.js'
   import { getQuests, completeQuest } from '../stores/questProgress.svelte.js'
   import { getFarmerChat } from '../stores/farmerChat.svelte.js'
+  import { setInteractionPrompt } from '../stores/interactionPrompt.svelte.js'
 
   const INTERACT_DIST = 4
   const boneX = $derived(getQuests().boneX)
@@ -86,6 +87,7 @@
       if (getFarmerChat().open) return
       digEffect = true
       digTimer = 0
+      setInteractionPrompt('')
       completeQuest('bone')
     }
   }
@@ -97,7 +99,10 @@
     const dx = localPlayerPos.x - boneX
     const dz = localPlayerPos.z - boneZ
     const dist = Math.sqrt(dx * dx + dz * dz)
+    const wasNear = nearBone
     nearBone = dist < INTERACT_DIST
+    if (nearBone && !wasNear) setInteractionPrompt('Press E to dig')
+    if (!nearBone && wasNear) setInteractionPrompt('')
 
     // Pulse glow
     pulseTime += delta
@@ -155,34 +160,3 @@
   </T.Group>
 {/if}
 
-{#if nearBone && !quests.bone && !digEffect}
-  <div class="prompt">
-    Press <kbd>E</kbd> to dig
-  </div>
-{/if}
-
-<style>
-  .prompt {
-    position: fixed;
-    bottom: 18%;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(0, 0, 0, 0.65);
-    color: #fff;
-    padding: 0.5rem 1.2rem;
-    border-radius: 8px;
-    font-family: "permanent-marker", sans-serif;
-    font-size: 0.9rem;
-    pointer-events: none;
-    z-index: 500;
-    white-space: nowrap;
-  }
-  .prompt kbd {
-    background: rgba(255, 255, 255, 0.2);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    border-radius: 3px;
-    padding: 0.1rem 0.35rem;
-    font-family: inherit;
-    font-weight: bold;
-  }
-</style>
