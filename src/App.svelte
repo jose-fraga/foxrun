@@ -9,6 +9,7 @@
   import QuestHUD from "./lib/components/QuestHUD.svelte";
   import VictoryScreen from "./lib/components/VictoryScreen.svelte";
   import { connect, disconnect } from "./lib/network.js";
+  import "./lib/stores/players.svelte.js";
   import { resetQuests } from "./lib/stores/questProgress.svelte.js";
 
   let connected = $state(false);

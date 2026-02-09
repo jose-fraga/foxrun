@@ -49,6 +49,7 @@
   let isThinking = false
   let hasGreeted = false
   let greetTimer = 0
+  let hostFallbackTimer = 0
 
   function pickTarget() {
     const angle = rand() * Math.PI * 2
@@ -124,6 +125,14 @@
       if (chat.nearFarmer) setNearFarmer(false)
       hasGreeted = false
       greetTimer = 0
+    }
+
+    // --- Auto-promote to host if no one is controlling the farmer ---
+    if (!farmerSync.isHost && !farmerSync.remote) {
+      hostFallbackTimer += delta
+      if (hostFallbackTimer > 0.5) {
+        farmerSync.isHost = true
+      }
     }
 
     // --- Host: run farmer AI and broadcast state ---
