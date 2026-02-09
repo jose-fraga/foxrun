@@ -1,11 +1,10 @@
 <script>
   import { T } from '@threlte/core'
-  import { useGltf } from '@threlte/extras'
   import * as THREE from 'three'
   import { getTerrainHeight } from '../utils/terrain.js'
-  import { applyBrushPaintStyle } from '../utils/modelLoader.js'
+  import { loadModel } from '../utils/modelLoader.js'
 
-  const gltf = useGltf('/Fence.glb')
+  const gltf = loadModel('/Fence.glb')
 
   const HALF_SIZE = 180
   const SCALE = 3
@@ -109,7 +108,6 @@
 </script>
 
 {#await gltf then value}
-  {@const _styled = applyBrushPaintStyle(value)}
   {#if !instancedMeshes}
     <T is={new THREE.Object3D()} oncreate={() => buildInstancedFences(value.scene)} />
   {/if}

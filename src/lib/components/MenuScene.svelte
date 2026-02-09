@@ -1,8 +1,7 @@
 <script>
   import { T, useTask } from '@threlte/core'
-  import { useGltf } from '@threlte/extras'
   import * as THREE from 'three'
-  import { applyBrushPaintStyle } from '../utils/modelLoader.js'
+  import { loadModel } from '../utils/modelLoader.js'
 
   // Fixed cinematic camera
   let camera
@@ -61,7 +60,7 @@
   skyMesh.frustumCulled = false
 
   // --- Windmill (brush-painted) ---
-  const windmillGltf = useGltf('/Windmill.glb')
+  const windmillGltf = loadModel('/Windmill.glb')
   let blades = null
 
   // Ground plane
@@ -237,7 +236,6 @@
 
 <!-- Windmill (brush-painted) -->
 {#await windmillGltf then value}
-  {@const _styled = applyBrushPaintStyle(value)}
   <T
     is={value.scene}
     scale={3}

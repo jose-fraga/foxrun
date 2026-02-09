@@ -1,13 +1,12 @@
 <script>
   import { T, useTask } from '@threlte/core'
-  import { useGltf } from '@threlte/extras'
   import * as THREE from 'three'
   import { clone as cloneSkeleton } from 'three/examples/jsm/utils/SkeletonUtils.js'
   import { getTerrainHeight } from '../utils/terrain.js'
   import { localPlayerPos, stunPlayer } from '../utils/playerPosition.js'
-  import { applyBrushPaintStyle } from '../utils/modelLoader.js'
+  import { loadModel } from '../utils/modelLoader.js'
 
-  const gltf = useGltf('/Cow.gltf')
+  const gltf = loadModel('/Cow.gltf')
 
   const COW_COUNT = 4
   const WALK_SPEED = 1.5
@@ -190,7 +189,6 @@
 </script>
 
 {#await gltf then value}
-  {@const _styled = applyBrushPaintStyle(value)}
   {#each cows as cow, i}
     {@const scene = cloneSkeleton(value.scene)}
     <T.Group

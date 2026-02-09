@@ -1,6 +1,5 @@
 <script>
   import { T, useTask } from '@threlte/core'
-  import { useGltf } from '@threlte/extras'
   import * as THREE from 'three'
   import { clone as cloneSkeleton } from 'three/examples/jsm/utils/SkeletonUtils.js'
   import { getTerrainHeight } from '../utils/terrain.js'
@@ -8,7 +7,7 @@
   import { getRemotePlayers } from '../stores/players.svelte.js'
   import { POND_CENTER, POND_RADIUS } from '../utils/pond.js'
   import { resolveCollision } from '../utils/obstacles.js'
-  import { applyBrushPaintStyle } from '../utils/modelLoader.js'
+  import { loadModel } from '../utils/modelLoader.js'
   import { getQuests, completeQuest } from '../stores/questProgress.svelte.js'
 
   // Catch burst effect
@@ -44,7 +43,7 @@
   let catchPos = { x: 0, y: 0, z: 0 }
   let catchTimer = 0
 
-  const gltf = useGltf('/Deer.gltf')
+  const gltf = loadModel('/Deer.gltf')
   const remotePlayers = $derived(getRemotePlayers())
   const quests = $derived(getQuests())
   const CATCH_DIST = 2
@@ -396,7 +395,6 @@
 </script>
 
 {#await gltf then value}
-  {@const _styled = applyBrushPaintStyle(value)}
   {#each deer as d, i}
     {#if !d.caught}
       {@const scene = cloneSkeleton(value.scene)}

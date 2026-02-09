@@ -1,13 +1,12 @@
 <script>
   import { T, useTask } from '@threlte/core'
-  import { useGltf } from '@threlte/extras'
   import * as THREE from 'three'
   import { addObstacle } from '../utils/obstacles.js'
-  import { applyBrushPaintStyle } from '../utils/modelLoader.js'
+  import { loadModel } from '../utils/modelLoader.js'
 
   addObstacle(0, 0, 3)
 
-  const gltf = useGltf('/Windmill.glb')
+  const gltf = loadModel('/Windmill.glb')
 
   let blades = null
   let rotationSpeed = 1.2
@@ -32,7 +31,6 @@
 </script>
 
 {#await gltf then value}
-  {@const _styled = applyBrushPaintStyle(value)}
   <T
     is={value.scene}
     scale={3}

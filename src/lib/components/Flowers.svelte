@@ -1,12 +1,11 @@
 <script>
   import { T } from '@threlte/core'
-  import { useGltf } from '@threlte/extras'
   import * as THREE from 'three'
   import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
   import { getTerrainHeight } from '../utils/terrain.js'
-  import { applyBrushPaintStyle } from '../utils/modelLoader.js'
+  import { loadModel } from '../utils/modelLoader.js'
 
-  const gltf = useGltf('/Flowers.glb')
+  const gltf = loadModel('/Flowers.glb')
 
   // Small clusters scattered around the field
   const clusters = [
@@ -52,7 +51,6 @@
   let mergedGroup = $state(null)
 
   gltf.then((value) => {
-    applyBrushPaintStyle(value)
     const geosByMaterial = new Map()
     const dummy = new THREE.Object3D()
 

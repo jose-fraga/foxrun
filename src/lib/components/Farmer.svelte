@@ -1,15 +1,15 @@
 <script>
   import { T, useTask } from '@threlte/core'
-  import { useGltf, HTML } from '@threlte/extras'
+  import { HTML } from '@threlte/extras'
   import * as THREE from 'three'
   import { getTerrainHeight } from '../utils/terrain.js'
   import { localPlayerPos } from '../utils/playerPosition.js'
   import { setNearFarmer, openChat, getFarmerChat } from '../stores/farmerChat.svelte.js'
   import { farmerSync } from '../stores/farmerSync.js'
   import { sendFarmerState } from '../network.js'
-  import { applyBrushPaintStyle } from '../utils/modelLoader.js'
+  import { loadModel } from '../utils/modelLoader.js'
 
-  const gltf = useGltf('/Farmer.glb')
+  const gltf = loadModel('/Farmer.glb')
 
   const WALK_SPEED = 5
   const WANDER_RADIUS = 25
@@ -219,7 +219,6 @@
 </script>
 
 {#await gltf then value}
-  {@const _styled = applyBrushPaintStyle(value)}
   <T.Group
     position.x={farmer.x}
     position.y={getTerrainHeight(farmer.x, farmer.z)}
