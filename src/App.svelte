@@ -12,14 +12,12 @@
   import { resetQuests } from "./lib/stores/questProgress.svelte.js";
 
   let connected = $state(false);
-  let fading = $state(false);
   let showLobby = $state(true);
   let roomId = $state(
     new URLSearchParams(window.location.search).get("room") || "default",
   );
 
-  function joinRoom() {
-    // Show loading screen and reset progress
+  function showLoadingScreen() {
     const loadEl = document.getElementById('loading-screen');
     if (loadEl) {
       loadEl.style.display = '';
@@ -28,20 +26,19 @@
     const bar = document.getElementById('progress-fill');
     if (bar) bar.style.width = '0%';
 
-    // Track real loading progress via Three.js DefaultLoadingManager
     THREE.DefaultLoadingManager.onProgress = (_url, loaded, total) => {
       const fill = document.getElementById('progress-fill');
       if (fill) {
         fill.style.width = Math.round((loaded / total) * 100) + '%';
       }
     };
+  }
 
+  function joinRoom() {
+    showLoadingScreen();
+    showLobby = false;
     connect(roomId);
     connected = true;
-    fading = true;
-    setTimeout(() => {
-      showLobby = false;
-    }, 1200);
   }
 
   function onGameReady() {
@@ -54,34 +51,18 @@
       const el = document.getElementById('loading-screen');
       if (el) {
         el.classList.add('fade-out');
-        setTimeout(() => { el.style.display = 'none'; el.classList.remove('fade-out'); }, 700);
+        setTimeout(() => { el.style.display = 'none'; el.classList.remove('fade-out'); }, 900);
       }
       THREE.DefaultLoadingManager.onProgress = undefined;
     }, 1000);
   }
 
   function handlePlayAgain() {
-    // Show loading screen and reset progress
-    const loadEl = document.getElementById('loading-screen');
-    if (loadEl) {
-      loadEl.style.display = '';
-      loadEl.classList.remove('fade-out');
-    }
-    const bar = document.getElementById('progress-fill');
-    if (bar) bar.style.width = '0%';
-
-    THREE.DefaultLoadingManager.onProgress = (_url, loaded, total) => {
-      const fill = document.getElementById('progress-fill');
-      if (fill) {
-        fill.style.width = Math.round((loaded / total) * 100) + '%';
-      }
-    };
-
+    showLoadingScreen();
     disconnect();
     resetQuests();
     connected = false;
     showLobby = false;
-    fading = false;
     // Let the DOM unmount the game scene, then reconnect
     setTimeout(() => {
       connect(roomId);
@@ -98,14 +79,14 @@
 
 {#if showLobby}
   <!-- 3D menu background -->
-  <div class="menu-canvas" class:fading>
+  <div class="menu-canvas">
     <Canvas toneMapping={THREE.ACESFilmicToneMapping} toneMappingExposure={0.8} dpr={Math.min(window.devicePixelRatio, 2)}>
       <MenuScene />
     </Canvas>
   </div>
 
   <!-- UI overlay -->
-  <div class="lobby" class:fading>
+  <div class="lobby">
     <div class="title-layer">
       <h1>Beyond the Fence</h1>
     </div>
@@ -140,12 +121,6 @@
     position: fixed;
     inset: 0;
     z-index: 199;
-    transition: opacity 1s ease-out;
-  }
-
-  .menu-canvas.fading {
-    opacity: 0;
-    pointer-events: none;
   }
 
   .lobby {
@@ -154,10 +129,6 @@
     z-index: 200;
     font-family: "permanent-marker", sans-serif;
     pointer-events: none;
-    transition: opacity 1s ease-out;
-  }
-  .lobby.fading {
-    opacity: 0;
   }
 
   /* Vignette overlay */
