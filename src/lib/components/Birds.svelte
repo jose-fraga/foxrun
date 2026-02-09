@@ -61,10 +61,10 @@
       const side = i % 2 === 0 ? 1 : -1
       const row = Math.ceil(i / 2)
 
-      const perpX = side * row * 2 * (-dirZ)
-      const perpZ = side * row * 2 * dirX
-      const backX = -row * 3 * dirX
-      const backZ = -row * 3 * dirZ
+      const perpX = side * row * 4 * (-dirZ)
+      const perpZ = side * row * 4 * dirX
+      const backX = -row * 2 * dirX
+      const backZ = -row * 2 * dirZ
 
       const birdScene = gltfData.scene.clone()
       birdScene.scale.setScalar(birdScale)

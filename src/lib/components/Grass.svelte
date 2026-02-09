@@ -216,11 +216,11 @@
 
         // Wind effect
         vec2 windDirection = normalize(vec2(1.0, 1.0));
-        float windAmp = 0.1;
-        float windFreq = 50.0;
-        float windSpeed = 1.0;
-        float noiseFactor = 5.5;
-        float noiseSpeed = 0.001;
+        float windAmp = 0.25;
+        float windFreq = 40.0;
+        float windSpeed = 2.5;
+        float noiseFactor = 6.0;
+        float noiseSpeed = 0.003;
 
         vec4 modelPosition = modelMatrix * instanceMatrix * vec4(position, 1.0);
 

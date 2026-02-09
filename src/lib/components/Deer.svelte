@@ -7,6 +7,7 @@
   import { localPlayerPos } from '../utils/playerPosition.js'
   import { getRemotePlayers } from '../stores/players.svelte.js'
   import { POND_CENTER, POND_RADIUS } from '../utils/pond.js'
+  import { resolveCollision } from '../utils/obstacles.js'
 
   const gltf = useGltf('/Deer.gltf')
   const remotePlayers = $derived(getRemotePlayers())
@@ -289,6 +290,11 @@
           }
         }
       }
+
+      // Push out of barn/windmill obstacles
+      const resolved = resolveCollision(d.x, d.z, 1)
+      d.x = resolved.x
+      d.z = resolved.z
 
       // Update Three.js positions
       if (d.group) {

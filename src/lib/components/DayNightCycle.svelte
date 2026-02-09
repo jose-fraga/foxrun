@@ -212,7 +212,7 @@
 
 <!-- Fog -->
 <T.FogExp2
-  args={['#c8dff5', 0.004]}
+  args={['#c8dff5', 0.0025]}
   attach="fog"
   oncreate={(ref) => { fogRef = ref }}
 />
