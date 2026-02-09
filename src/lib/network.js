@@ -103,8 +103,8 @@ export function clearFarmerState() {
   lastFarmerState = null
 }
 
-export function sendChat(text) {
+export function sendChat(text, questState) {
   if (socket && socket.readyState === WebSocket.OPEN) {
-    socket.send(JSON.stringify({ type: 'chat', text }))
+    socket.send(JSON.stringify({ type: 'chat', text, questState }))
   }
 }

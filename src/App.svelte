@@ -14,9 +14,15 @@
   import { getInteractionPrompt } from "./lib/stores/interactionPrompt.svelte.js";
 
   const prompt = $derived(getInteractionPrompt());
+  const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
+  function triggerInteract() {
+    window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyE' }));
+  }
 
   let connected = $state(false);
   let showLobby = $state(true);
+  let showIntro = $state(false);
   let roomId = $state(
     new URLSearchParams(window.location.search).get("room") || "default",
   );
@@ -58,6 +64,12 @@
         setTimeout(() => { el.style.display = 'none'; el.classList.remove('fade-out'); }, 900);
       }
       THREE.DefaultLoadingManager.onProgress = undefined;
+
+      // Show intro message after loading screen fades
+      setTimeout(() => {
+        showIntro = true;
+        setTimeout(() => { showIntro = false; }, 6000);
+      }, 900);
     }, 1000);
   }
 
@@ -117,10 +129,17 @@
   <TouchControls />
   <FarmerChat />
   {#if prompt}
-    <div class="interaction-prompt">{prompt}</div>
+    <button class="interaction-prompt" onclick={triggerInteract}>
+      {isMobile ? `Tap to ${prompt}` : `Press E to ${prompt}`}
+    </button>
   {/if}
   <QuestHUD />
   <VictoryScreen onplayagain={handlePlayAgain} />
+  {#if showIntro}
+    <div class="intro-message">
+      I've been trapped in this farm for too long...
+    </div>
+  {/if}
 {/if}
 
 <style>
@@ -138,20 +157,7 @@
     pointer-events: none;
   }
 
-  /* Vignette overlay */
-  .lobby::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(
-      ellipse at center 55%,
-      rgba(0, 0, 0, 0) 30%,
-      rgba(0, 0, 0, 0.4) 100%
-    );
-    pointer-events: none;
-  }
-
-  .title-layer {
+.title-layer {
     position: absolute;
     top: 18%;
     left: 50%;
@@ -162,10 +168,6 @@
   .title-layer h1 {
     font-size: 4rem;
     color: white;
-    text-shadow:
-      3px 4px 0 rgba(0, 0, 0, 0.4),
-      0 0 60px rgba(255, 200, 50, 0.25),
-      0 0 120px rgba(255, 150, 50, 0.1);
     letter-spacing: 4px;
     white-space: nowrap;
     user-select: none;
@@ -223,7 +225,6 @@
     border: none;
     cursor: pointer;
     letter-spacing: 2px;
-    text-shadow: 2px 3px 0 rgba(0, 0, 0, 0.4);
     transition: transform 0.15s;
   }
   .controls button:hover {
@@ -239,11 +240,37 @@
     color: #fff;
     padding: 0.5rem 1.2rem;
     border-radius: 8px;
+    border: none;
     font-family: "permanent-marker", sans-serif;
     font-size: 0.9rem;
-    pointer-events: none;
+    cursor: pointer;
     z-index: 500;
     white-space: nowrap;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .interaction-prompt:active {
+    background: rgba(255, 255, 255, 0.25);
+  }
+
+  .intro-message {
+    position: fixed;
+    top: 40%;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: "permanent-marker", sans-serif;
+    font-size: 1.6rem;
+    color: white;
+    text-align: center;
+    z-index: 400;
+    pointer-events: none;
+    animation: intro-fade 6s ease-in-out forwards;
+  }
+
+  @keyframes intro-fade {
+    0% { opacity: 0; transform: translateX(-50%) translateY(8px); }
+    12% { opacity: 1; transform: translateX(-50%) translateY(0); }
+    80% { opacity: 1; transform: translateX(-50%) translateY(0); }
+    100% { opacity: 0; transform: translateX(-50%) translateY(-8px); }
   }
 
   @media (max-width: 768px) {
@@ -256,6 +283,9 @@
     }
     .controls-layer {
       top: 32%;
+    }
+    .intro-message {
+      font-size: 1.1rem;
     }
   }
 </style>

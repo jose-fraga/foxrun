@@ -62,8 +62,13 @@
     display: flex;
     align-items: flex-start;
     justify-content: center;
-    padding-top: 12%;
-    background: rgba(0, 0, 0, 0.3);
+    padding-top: 8%;
+    background: linear-gradient(
+      to bottom,
+      rgba(0, 0, 0, 0.5) 0%,
+      rgba(0, 0, 0, 0.15) 50%,
+      rgba(0, 0, 0, 0.05) 100%
+    );
     animation: fadeIn 1s ease-out;
   }
 

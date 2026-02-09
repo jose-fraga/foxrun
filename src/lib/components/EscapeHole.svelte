@@ -15,6 +15,9 @@
 
   const quests = $derived(getQuests())
   const ready = $derived(allQuestsComplete() && !quests.cinematicDone)
+  const showExit = $derived(quests.escaped)
+  const exitZ = $derived(holeZ - 6)
+  const exitY = $derived(getTerrainHeight(holeX, holeZ - 6) + 0.1)
   let nearHole = $state(false)
 
   // Swirling particles
@@ -39,13 +42,59 @@
   })
   const particles = new THREE.Points(particleGeo, particleMat)
 
-  // Dark hole on ground
-  const holeGeo = new THREE.PlaneGeometry(4, 4)
+  // Organic brush-painted hole shape
+  const holeShape = new THREE.Shape()
+  const HOLE_SEGMENTS = 32
+  for (let i = 0; i <= HOLE_SEGMENTS; i++) {
+    const angle = (i / HOLE_SEGMENTS) * Math.PI * 2
+    const wobble = 1
+      + 0.12 * Math.sin(angle * 3 + 0.5)
+      + 0.08 * Math.cos(angle * 5 + 1.7)
+      + 0.06 * Math.sin(angle * 7 + 3.2)
+      + 0.04 * Math.cos(angle * 11 + 0.3)
+    const r = 2.0 * wobble
+    const x = Math.cos(angle) * r
+    const y = Math.sin(angle) * r
+    if (i === 0) holeShape.moveTo(x, y)
+    else holeShape.lineTo(x, y)
+  }
+  const holeGeo = new THREE.ShapeGeometry(holeShape)
   holeGeo.rotateX(-Math.PI / 2)
+
+  // Dirt rim ring around hole
+  const rimShape = new THREE.Shape()
+  const rimInner = new THREE.Path()
+  for (let i = 0; i <= HOLE_SEGMENTS; i++) {
+    const angle = (i / HOLE_SEGMENTS) * Math.PI * 2
+    const wobble = 1
+      + 0.12 * Math.sin(angle * 3 + 0.5)
+      + 0.08 * Math.cos(angle * 5 + 1.7)
+      + 0.06 * Math.sin(angle * 7 + 3.2)
+      + 0.04 * Math.cos(angle * 11 + 0.3)
+    const rOuter = 2.5 * wobble
+    const rInner = 2.0 * wobble
+    const xO = Math.cos(angle) * rOuter
+    const yO = Math.sin(angle) * rOuter
+    const xI = Math.cos(angle) * rInner
+    const yI = Math.sin(angle) * rInner
+    if (i === 0) { rimShape.moveTo(xO, yO); rimInner.moveTo(xI, yI) }
+    else { rimShape.lineTo(xO, yO); rimInner.lineTo(xI, yI) }
+  }
+  rimShape.holes.push(rimInner)
+  const rimGeo = new THREE.ShapeGeometry(rimShape)
+  rimGeo.rotateX(-Math.PI / 2)
+  const rimMat = new THREE.MeshBasicMaterial({
+    color: 0x3a2a1a,
+    transparent: true,
+    opacity: 0.7,
+    side: THREE.DoubleSide,
+    depthWrite: false,
+  })
+
   const holeMat = new THREE.MeshBasicMaterial({
     color: 0x0a0a0a,
     transparent: true,
-    opacity: 0.9,
+    opacity: 0.92,
     side: THREE.DoubleSide,
     depthWrite: false,
   })
@@ -71,7 +120,7 @@
     const dist = Math.sqrt(dx * dx + dz * dz)
     const wasNear = nearHole
     nearHole = dist < INTERACT_DIST
-    if (nearHole && !wasNear) setInteractionPrompt('Press E to Escape')
+    if (nearHole && !wasNear) setInteractionPrompt('dig')
     if (!nearHole && wasNear) setInteractionPrompt('')
 
     // Animate swirling particles
@@ -90,17 +139,18 @@
 
 <svelte:window onkeydown={handleKeydown} />
 
-{#if ready}
+{#if showExit}
+  <!-- Entry hole (inside fence) — only after digging -->
   <T.Group position={[holeX, holeY, holeZ]}>
-    <!-- Dark hole -->
+    <T.Mesh geometry={rimGeo} material={rimMat} position.y={0.02} />
     <T.Mesh geometry={holeGeo} material={holeMat} />
+  </T.Group>
 
-    <!-- Swirling golden particles -->
-    <T is={particles} />
-
-    <!-- Beacon light -->
-    <T.PointLight color="#ffd700" intensity={5} distance={30} position.y={3} />
-    <T.PointLight color="#ffd700" intensity={2} distance={60} position.y={10} />
+  <!-- Exit hole (outside fence) -->
+  <T.Group position={[holeX, exitY, exitZ]}>
+    <T.Mesh geometry={rimGeo} material={rimMat} position.y={0.02} />
+    <T.Mesh geometry={holeGeo} material={holeMat} />
+    <T.PointLight color="#ffd700" intensity={3} distance={15} position.y={1} />
   </T.Group>
 {/if}
 

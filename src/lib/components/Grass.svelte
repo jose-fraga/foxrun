@@ -13,9 +13,8 @@
 
   const MAX_STOMPERS = isMobile ? 4 : 8
   const INSTANCE_COUNT = isMobile ? 200000 : 650000
-  const FIELD_SIZE = 700
+  const FIELD_SIZE = 360 // match fence bounds (180 * 2)
   const FENCE_HALF = 180
-  const FALLOFF_DIST = 100
   const BLADES_PER_CLUMP = 5
   const BLADE_HEIGHT = 0.8
   const BLADE_WIDTH = 0.1
@@ -390,11 +389,11 @@
     const dzHole = z - _q.holeZ
     if (dxHole * dxHole + dzHole * dzHole < 16) continue
 
-    // Inside fence: always place. Beyond: probability falls off with distance
-    if (beyondDist > 0) {
-      const keepProb = 1 - Math.min(1, beyondDist / FALLOFF_DIST)
-      if (Math.random() > keepProb) continue
-    }
+    // Skip crop area (next to barn)
+    if (x > 70 && x < 90 && z > -50 && z < -30) continue
+
+    // No grass outside the fence
+    if (beyondDist > 0) continue
 
     const y = getTerrainHeight(x, z)
     dummy.position.set(x, y, z)

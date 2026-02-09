@@ -87,7 +87,9 @@
   // Escape cinematic
   let escapeCinematic = false
   let escapeTimer = 0
-  const ESCAPE_DURATION = 5
+  const ESCAPE_DURATION = 7
+  const EXIT_OFFSET = 6 // distance outside the fence for exit hole
+  const TUNNEL_DEPTH = 3.5
   const escapeCamStart = new THREE.Vector3()
   const escapeLookStart = new THREE.Vector3()
   const escapeCamEnd = new THREE.Vector3()
@@ -117,46 +119,67 @@
 
     if (mixer) mixer.update(delta)
 
-    // Escape cinematic
+    // Escape cinematic — tunnel under fence
     if (quests.escaped && !quests.cinematicDone) {
       if (!escapeCinematic) {
         escapeCinematic = true
         escapeTimer = 0
-        // Capture current camera state
         if (camera) {
           escapeCamStart.copy(camera.position)
           escapeLookStart.copy(currentLookat)
         }
-        // Target: camera on the other side of the fence, looking back
         const hx = quests.holeX
         const hz = quests.holeZ
-        const holeY = getTerrainHeight(hx, hz)
-        const escTargetZ = hz - 12
-        escapeCamEnd.set(hx + 6, holeY + 5, escTargetZ - 4)
-        escapeLookEnd.set(hx, holeY + 2, escTargetZ)
+        const groundY = getTerrainHeight(hx, hz)
+        // Camera ends behind player outside fence, looking back at farm
+        escapeCamEnd.set(hx + 5, groundY + 4, hz - EXIT_OFFSET - 6)
+        escapeLookEnd.set(hx, groundY + 2, hz + 10)
       }
 
       escapeTimer += delta
+      const progress = Math.min(escapeTimer / ESCAPE_DURATION, 1)
 
-      // Auto-walk player toward hole, then through to the other side
       const hx = quests.holeX
       const hz = quests.holeZ
-      const escTargetZ = hz - 12
-      const targetZ = escapeTimer < ESCAPE_DURATION * 0.5 ? hz : escTargetZ
-      const toDx = hx - playerX
-      const toDz = targetZ - playerZ
-      const toDist = Math.sqrt(toDx * toDx + toDz * toDz)
-      if (toDist > 1) {
-        const walkSpeed = 8
-        playerX += (toDx / toDist) * walkSpeed * delta
-        playerZ += (toDz / toDist) * walkSpeed * delta
-        rotation = Math.atan2(-toDx, -toDz)
+      const exitZ = hz - EXIT_OFFSET
+      const groundY = getTerrainHeight(hx, hz) + 1.5
+
+      if (progress < 0.2) {
+        // Phase 1: Walk to entry hole
+        const toDx = hx - playerX
+        const toDz = hz - playerZ
+        const toDist = Math.sqrt(toDx * toDx + toDz * toDz)
+        if (toDist > 0.5) {
+          playerX += (toDx / toDist) * 8 * delta
+          playerZ += (toDz / toDist) * 8 * delta
+          rotation = Math.atan2(-toDx, -toDz)
+        }
+        playerY = groundY
         playAction('Walk')
-      } else if (escapeTimer > ESCAPE_DURATION * 0.5) {
+      } else if (progress < 0.7) {
+        // Phase 2: Walk through tunnel (descend into entry, move underground, ascend from exit)
+        const tunnelT = (progress - 0.2) / 0.5 // 0 → 1
+        playerX = hx
+        playerZ = hz + (exitZ - hz) * tunnelT
+        rotation = 0 // face -z (toward outside)
+        // Sine curve dip — deepest in the middle
+        const yOffset = -TUNNEL_DEPTH * Math.sin(tunnelT * Math.PI)
+        playerY = groundY + yOffset
+        playAction('Walk')
+      } else {
+        // Phase 3: Stand outside fence, turn to face farm, idle
+        playerX = hx
+        playerZ = exitZ
+        playerY = groundY
+        // Smoothly rotate to face +z (back toward the farm)
+        const targetRot = Math.PI
+        let dAngle = targetRot - rotation
+        if (dAngle > Math.PI) dAngle -= 2 * Math.PI
+        if (dAngle < -Math.PI) dAngle += 2 * Math.PI
+        rotation += dAngle * Math.min(1, 3 * delta)
         playAction('Idle')
       }
 
-      playerY = getTerrainHeight(playerX, playerZ) + 1.5
       localPlayerPos.x = playerX
       localPlayerPos.y = playerY
       localPlayerPos.z = playerZ
@@ -165,8 +188,7 @@
 
       // Smooth camera lerp
       if (camera) {
-        const t = Math.min(escapeTimer / ESCAPE_DURATION, 1)
-        const ease = t * t * (3 - 2 * t) // smoothstep
+        const ease = progress * progress * (3 - 2 * progress)
         camera.position.lerpVectors(escapeCamStart, escapeCamEnd, ease)
         _lookat.lerpVectors(escapeLookStart, escapeLookEnd, ease)
         camera.lookAt(_lookat)
@@ -185,6 +207,25 @@
         grounded: true,
         char: selectedChar.id,
       })
+      return
+    }
+
+    // Victory screen freeze — keep player outside fence, camera looking at farm
+    if (quests.cinematicDone) {
+      const hx = quests.holeX
+      const hz = quests.holeZ
+      const groundY = getTerrainHeight(hx, hz) + 1.5
+      playerX = hx
+      playerZ = hz - EXIT_OFFSET
+      playerY = groundY
+      rotation = Math.PI // face +z (toward farm)
+      playAction('Idle')
+      rigidBody.setTranslation({ x: playerX, y: playerY, z: playerZ }, true)
+      rigidBody.setLinvel({ x: 0, y: 0, z: 0 }, true)
+      if (camera) {
+        camera.position.copy(escapeCamEnd)
+        camera.lookAt(escapeLookEnd)
+      }
       return
     }
 
@@ -227,7 +268,7 @@
         _playerPos.set(playerX, playerY, playerZ)
         _offset.copy(idealOffset).applyQuaternion(playerQuat).add(_playerPos)
         _lookat.copy(idealLookat).applyQuaternion(playerQuat).add(_playerPos)
-        const t = 1.0 - Math.pow(0.01, delta)
+        const t = 1.0 - Math.pow(0.0001, delta)
         currentPosition.lerp(_offset, t)
         currentLookat.lerp(_lookat, t)
         camera.position.copy(currentPosition)
@@ -339,7 +380,7 @@
         _playerPos.set(playerX, playerY, playerZ)
         _offset.copy(idealOffset).applyQuaternion(playerQuat).add(_playerPos)
         _lookat.copy(idealLookat).applyQuaternion(playerQuat).add(_playerPos)
-        const t = 1.0 - Math.pow(0.01, delta)
+        const t = 1.0 - Math.pow(0.0001, delta)
         currentPosition.lerp(_offset, t)
         currentLookat.lerp(_lookat, t)
         camera.position.copy(currentPosition)

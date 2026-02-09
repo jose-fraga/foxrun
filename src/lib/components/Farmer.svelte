@@ -13,7 +13,7 @@
 
   const WALK_SPEED = 5
   const WANDER_RADIUS = 25
-  const HOME = { x: -10, z: 10 }
+  const HOME = { x: -60, z: 50 }
   const INTERACT_DIST = 6
   const SCALE = 3.5
   const CHARS_PER_SEC = 40

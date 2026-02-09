@@ -22,37 +22,15 @@
     side: THREE.BackSide,
     depthWrite: false,
     fog: false,
-    uniforms: { uNightFactor: { value: 0 } },
+    uniforms: {},
     vertexShader: `
-      varying vec3 vWorldPosition;
       void main() {
-        vec4 worldPos = modelMatrix * vec4(position, 1.0);
-        vWorldPosition = worldPos.xyz;
         gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
       }
     `,
     fragmentShader: `
-      uniform float uNightFactor;
-      varying vec3 vWorldPosition;
       void main() {
-        vec3 dir = normalize(vWorldPosition);
-        float elev = max(dir.y, 0.0);
-
-        vec3 dayLow  = vec3(1.0, 0.83, 0.66);
-        vec3 dayMid  = vec3(0.53, 0.81, 0.92);
-        vec3 dayHigh = vec3(0.36, 0.55, 0.78);
-
-        vec3 sky = mix(dayLow, dayMid, smoothstep(0.0, 0.3, elev));
-        sky = mix(sky, dayHigh, smoothstep(0.3, 0.7, elev));
-
-        // Sun disc
-        vec3 sunDir = normalize(vec3(0.0, 6.0, -200.0));
-        float sunAngle = dot(dir, sunDir);
-        float sunDisc = step(0.9995, sunAngle);
-        vec3 sunCore = vec3(1.0, 0.95, 0.7);
-        sky = mix(sky, sunCore, sunDisc);
-
-        gl_FragColor = vec4(sky, 1.0);
+        gl_FragColor = vec4(0.53, 0.81, 0.92, 1.0);
       }
     `
   })
@@ -210,24 +188,24 @@
 <!-- Toon sky dome -->
 <T is={skyMesh} />
 
-<!-- Directional sun light (sunset values from DayNightCycle) -->
+<!-- Directional sun light (bright daytime) -->
 <T.DirectionalLight
   position={[0, 6, -200]}
-  intensity={6.5}
-  color="#ffe0a0"
+  intensity={5}
+  color="#ffffff"
 />
 
 <!-- Hemisphere light -->
 <T.HemisphereLight
-  args={[0xffd4a8, 0x3a4a30, 0.2]}
+  args={[0x87ceeb, 0x3a4a30, 0.3]}
 />
 
 <!-- Ambient fill -->
-<T.AmbientLight intensity={0.1} color="#ffe0c0" />
+<T.AmbientLight intensity={0.15} color="#e8f0ff" />
 
 <!-- Fog -->
 <T.FogExp2
-  args={['#c8dff5', 0.003]}
+  args={['#a8cce8', 0.003]}
   attach="fog"
 />
 

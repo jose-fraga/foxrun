@@ -1,10 +1,21 @@
 <script>
   import { getFarmerChat, openChat, closeChat, addMessage, setLoading } from '../stores/farmerChat.svelte.js'
   import { sendChat } from '../network.js'
+  import { setInteractionPrompt, getInteractionPrompt } from '../stores/interactionPrompt.svelte.js'
+  import { getQuests } from '../stores/questProgress.svelte.js'
 
   const chat = $derived(getFarmerChat())
 
   let inputText = $state('')
+
+  // Sync "talk" prompt with shared interaction prompt store
+  $effect(() => {
+    if (chat.nearFarmer && !chat.open) {
+      setInteractionPrompt('talk')
+    } else if (getInteractionPrompt() === 'talk') {
+      setInteractionPrompt('')
+    }
+  })
 
   function handleKeydown(e) {
     if (e.code === 'KeyE' && chat.nearFarmer) {
@@ -26,7 +37,8 @@
     if (!text || chat.loading) return
     addMessage('user', text)
     setLoading(true)
-    sendChat(text)
+    const q = getQuests()
+    sendChat(text, { softspot: q.softspot })
     inputText = ''
   }
 
@@ -47,12 +59,6 @@
 </script>
 
 <svelte:window onkeydown={handleKeydown} />
-
-{#if chat.nearFarmer && !chat.open}
-  <div class="prompt">
-    Press <kbd>E</kbd> to talk
-  </div>
-{/if}
 
 {#if chat.open}
   <div class="input-bar">
@@ -83,30 +89,6 @@
 {/if}
 
 <style>
-  .prompt {
-    position: fixed;
-    bottom: 18%;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(0, 0, 0, 0.65);
-    color: #fff;
-    padding: 0.5rem 1.2rem;
-    border-radius: 8px;
-    font-family: "permanent-marker", sans-serif;
-    font-size: 0.9rem;
-    pointer-events: none;
-    z-index: 50;
-    white-space: nowrap;
-  }
-  .prompt kbd {
-    background: rgba(255, 255, 255, 0.2);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    border-radius: 3px;
-    padding: 0.1rem 0.35rem;
-    font-family: inherit;
-    font-weight: bold;
-  }
-
   .input-bar {
     position: fixed;
     bottom: 3%;

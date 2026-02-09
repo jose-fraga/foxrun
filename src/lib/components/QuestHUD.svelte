@@ -12,61 +12,61 @@
     </svg>
     <div class="quest-list">
       <div class="quest-title">Quests</div>
-      <label class="quest-item" class:done={quests.bone}>
+      <label class="quest-item" class:done={quests.tomatoes}>
         <span class="checkbox">
           <svg class="box-border" viewBox="0 0 16 16">
             <path d="M2 3 Q4 1.5 8 2.2 Q12 1.5 14 3 Q15.5 5 15 8 Q15.5 11 14 13 Q12 14.5 8 13.8 Q4 14.5 2 13 Q0.5 11 1 8 Q0.5 5 2 3Z"
               stroke="currentColor" stroke-width="1.2" fill="none" stroke-linejoin="round" stroke-linecap="round"/>
           </svg>
-          {#if quests.bone}
+          {#if quests.tomatoes}
             <svg class="check-mark" viewBox="0 0 16 16">
               <path d="M3.5 8.5 Q5 11 6.5 12.5 Q9 7 13 4" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           {/if}
         </span>
-        <span class="label">Golden Bone</span>
+        <span class="label">Pick Tomatoes</span>
       </label>
-      <label class="quest-item" class:done={quests.key}>
+      <label class="quest-item" class:done={quests.softspot}>
         <span class="checkbox">
           <svg class="box-border" viewBox="0 0 16 16">
             <path d="M2 3 Q4 1.5 8 2.2 Q12 1.5 14 3 Q15.5 5 15 8 Q15.5 11 14 13 Q12 14.5 8 13.8 Q4 14.5 2 13 Q0.5 11 1 8 Q0.5 5 2 3Z"
               stroke="currentColor" stroke-width="1.2" fill="none" stroke-linejoin="round" stroke-linecap="round"/>
           </svg>
-          {#if quests.key}
+          {#if quests.softspot}
             <svg class="check-mark" viewBox="0 0 16 16">
               <path d="M3.5 8.5 Q5 11 6.5 12.5 Q9 7 13 4" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           {/if}
         </span>
-        <span class="label">Farmer's Key</span>
+        <span class="label">Mark Soft Spot</span>
       </label>
-      <label class="quest-item" class:done={quests.deer}>
+      <label class="quest-item" class:done={quests.farmerInfo}>
         <span class="checkbox">
           <svg class="box-border" viewBox="0 0 16 16">
             <path d="M2 3 Q4 1.5 8 2.2 Q12 1.5 14 3 Q15.5 5 15 8 Q15.5 11 14 13 Q12 14.5 8 13.8 Q4 14.5 2 13 Q0.5 11 1 8 Q0.5 5 2 3Z"
               stroke="currentColor" stroke-width="1.2" fill="none" stroke-linejoin="round" stroke-linecap="round"/>
           </svg>
-          {#if quests.deer}
+          {#if quests.farmerInfo}
             <svg class="check-mark" viewBox="0 0 16 16">
               <path d="M3.5 8.5 Q5 11 6.5 12.5 Q9 7 13 4" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           {/if}
         </span>
-        <span class="label">Catch the Deer</span>
+        <span class="label">Talk to Farmer</span>
       </label>
-      <label class="quest-item" class:done={quests.cow}>
+      <label class="quest-item" class:done={quests.shovel}>
         <span class="checkbox">
           <svg class="box-border" viewBox="0 0 16 16">
             <path d="M2 3 Q4 1.5 8 2.2 Q12 1.5 14 3 Q15.5 5 15 8 Q15.5 11 14 13 Q12 14.5 8 13.8 Q4 14.5 2 13 Q0.5 11 1 8 Q0.5 5 2 3Z"
               stroke="currentColor" stroke-width="1.2" fill="none" stroke-linejoin="round" stroke-linecap="round"/>
           </svg>
-          {#if quests.cow}
+          {#if quests.shovel}
             <svg class="check-mark" viewBox="0 0 16 16">
               <path d="M3.5 8.5 Q5 11 6.5 12.5 Q9 7 13 4" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           {/if}
         </span>
-        <span class="label">Cow Kick</span>
+        <span class="label">Find Shovel</span>
       </label>
     </div>
   </div>
