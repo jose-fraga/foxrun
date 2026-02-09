@@ -5,19 +5,24 @@ const SEND_RATE = 1000 / 20 // 20 Hz
 let socket = null
 let sendTimer = null
 let lastSentState = null
+let lastFarmerState = null
 
 let onInit = null
 let onPlayerJoin = null
 let onPlayerLeave = null
 let onPlayerState = null
 let onChatResponse = null
+let onFarmerState = null
+let onFarmerHost = null
 
-export function setCallbacks({ init, join, leave, state, chatResponse }) {
+export function setCallbacks({ init, join, leave, state, chatResponse, farmerState, farmerHost }) {
   onInit = init
   onPlayerJoin = join
   onPlayerLeave = leave
   onPlayerState = state
   onChatResponse = chatResponse
+  onFarmerState = farmerState
+  onFarmerHost = farmerHost
 }
 
 export function connect(roomId) {
@@ -30,7 +35,7 @@ export function connect(roomId) {
     const data = JSON.parse(event.data)
     switch (data.type) {
       case 'init':
-        onInit?.(data.id, data.players)
+        onInit?.(data.id, data.players, data.cycleStartTime, data.farmerHost)
         break
       case 'player_join':
         onPlayerJoin?.(data.id)
@@ -44,6 +49,12 @@ export function connect(roomId) {
       case 'chat_response':
         onChatResponse?.(data.text)
         break
+      case 'farmer_state':
+        onFarmerState?.(data)
+        break
+      case 'farmer_host':
+        onFarmerHost?.()
+        break
     }
   })
 
@@ -53,8 +64,13 @@ export function connect(roomId) {
 
   // Start throttled send loop
   sendTimer = setInterval(() => {
-    if (socket && socket.readyState === WebSocket.OPEN && lastSentState) {
-      socket.send(JSON.stringify({ type: 'state', ...lastSentState }))
+    if (socket && socket.readyState === WebSocket.OPEN) {
+      if (lastSentState) {
+        socket.send(JSON.stringify({ type: 'state', ...lastSentState }))
+      }
+      if (lastFarmerState) {
+        socket.send(JSON.stringify({ type: 'farmer_state', ...lastFarmerState }))
+      }
     }
   }, SEND_RATE)
 
@@ -71,6 +87,14 @@ export function disconnect() {
 
 export function sendState(state) {
   lastSentState = state
+}
+
+export function sendFarmerState(state) {
+  lastFarmerState = state
+}
+
+export function clearFarmerState() {
+  lastFarmerState = null
 }
 
 export function sendChat(text) {

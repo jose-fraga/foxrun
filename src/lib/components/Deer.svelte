@@ -15,12 +15,15 @@
   const WALK_SPEED = 2.0
   const RUN_SPEED = 14
   const FIELD_LIMIT = 160
-  const HERD_CENTER = { x: 120, z: 120 }
-  const WANDER_RADIUS = 40
+  const WANDER_RADIUS = 30
   const MIN_SEPARATION = 3
   const FLEE_DIST = 12
   const SAFE_DIST = 25
-  const GROUP_COHESION = 0.02
+
+  // Migrating herd center — slowly roams across the map
+  let herdCenter = { x: 120, z: 120 }
+  let herdTarget = { x: 120, z: 120 }
+  let herdMoveTimer = 0
 
   let seed = 137
   function rand() {
@@ -45,10 +48,18 @@
     return { x, z }
   }
 
+  function pickHerdTarget() {
+    const angle = rand() * Math.PI * 2
+    const dist = 40 + rand() * (FIELD_LIMIT - 50)
+    const pos = clampToField(Math.cos(angle) * dist, Math.sin(angle) * dist)
+    herdTarget.x = pos.x
+    herdTarget.z = pos.z
+  }
+
   function pickTarget(d) {
     const angle = rand() * Math.PI * 2
     const dist = 5 + rand() * WANDER_RADIUS
-    const pos = clampToField(HERD_CENTER.x + Math.cos(angle) * dist, HERD_CENTER.z + Math.sin(angle) * dist)
+    const pos = clampToField(herdCenter.x + Math.cos(angle) * dist, herdCenter.z + Math.sin(angle) * dist)
     d.targetX = pos.x
     d.targetZ = pos.z
   }
@@ -56,8 +67,8 @@
   function initDeer(index) {
     const angle = rand() * Math.PI * 2
     const dist = 5 + rand() * WANDER_RADIUS
-    let x = HERD_CENTER.x + Math.cos(angle) * dist
-    let z = HERD_CENTER.z + Math.sin(angle) * dist
+    let x = herdCenter.x + Math.cos(angle) * dist
+    let z = herdCenter.z + Math.sin(angle) * dist
     const clamped = clampToField(x, z)
     x = clamped.x
     z = clamped.z
@@ -131,18 +142,23 @@
     return { dist: minDist, px: closestX, pz: closestZ }
   }
 
-  // Group center for cohesion
-  function getHerdCenter() {
-    let cx = 0, cz = 0
-    for (const d of deer) {
-      cx += d.x
-      cz += d.z
-    }
-    return { x: cx / deer.length, z: cz / deer.length }
-  }
 
   useTask((delta) => {
-    const herd = getHerdCenter()
+    // Migrate herd center across the map
+    herdMoveTimer -= delta
+    if (herdMoveTimer <= 0) {
+      pickHerdTarget()
+      herdMoveTimer = 30 + rand() * 60
+    }
+    // Slowly drift herd center toward target
+    const herdSpeed = 1.5 * delta
+    const hdx = herdTarget.x - herdCenter.x
+    const hdz = herdTarget.z - herdCenter.z
+    const hdd = Math.sqrt(hdx * hdx + hdz * hdz)
+    if (hdd > 1) {
+      herdCenter.x += (hdx / hdd) * herdSpeed
+      herdCenter.z += (hdz / hdd) * herdSpeed
+    }
 
     for (const d of deer) {
       if (!d.mixer) continue
@@ -257,21 +273,20 @@
           }
         }
 
-        // Gentle pull toward herd center (cohesion)
-        d.x += (herd.x - d.x) * GROUP_COHESION * delta
-        d.z += (herd.z - d.z) * GROUP_COHESION * delta
       }
 
-      // Soft separation from other deer
-      for (const other of deer) {
-        if (other === d) continue
-        const sx = d.x - other.x
-        const sz = d.z - other.z
-        const sd = Math.sqrt(sx * sx + sz * sz)
-        if (sd < MIN_SEPARATION && sd > 0.01) {
-          const push = (MIN_SEPARATION - sd) * 0.5 * delta
-          d.x += (sx / sd) * push
-          d.z += (sz / sd) * push
+      // Soft separation from other deer (only while moving, to avoid sliding idle deer)
+      if (d.state === 'walking' || d.state === 'fleeing') {
+        for (const other of deer) {
+          if (other === d) continue
+          const sx = d.x - other.x
+          const sz = d.z - other.z
+          const sd = Math.sqrt(sx * sx + sz * sz)
+          if (sd < MIN_SEPARATION && sd > 0.01) {
+            const push = (MIN_SEPARATION - sd) * 0.5 * delta
+            d.x += (sx / sd) * push
+            d.z += (sz / sd) * push
+          }
         }
       }
 

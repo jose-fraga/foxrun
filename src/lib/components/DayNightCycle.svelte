@@ -12,7 +12,6 @@
   const HOLD_DURATION = 300 // 5 minutes per state
   const TRANSITION_DURATION = 30
   const CYCLE_DURATION = (HOLD_DURATION + TRANSITION_DURATION) * 2 // 660s
-  let cycleTime = HOLD_DURATION - 10 // start near end of sunset hold so night comes quickly
 
   // --- Color helpers ---
   const _c1 = new THREE.Color()
@@ -106,7 +105,8 @@
   let prevNightFactor = -1
 
   useTask((delta) => {
-    cycleTime = (cycleTime + delta) % CYCLE_DURATION
+    const elapsed = (Date.now() - dayNight.cycleStartTime) / 1000
+    const cycleTime = ((elapsed % CYCLE_DURATION) + CYCLE_DURATION) % CYCLE_DURATION
 
     // Phase boundaries (in seconds):
     // 0 – HOLD: sunset hold

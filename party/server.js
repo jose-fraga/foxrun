@@ -7,13 +7,23 @@ export default class GameServer {
     this.room = room
     this.players = new Map()
     this.conversations = new Map()
+    // Day/night cycle: offset so night comes ~10s after room creation
+    this.cycleStartTime = Date.now() - (290 * 1000)
+    // Farmer host: first connected player runs farmer AI
+    this.farmerHostId = null
   }
 
   onConnect(conn) {
+    if (!this.farmerHostId) {
+      this.farmerHostId = conn.id
+    }
+
     conn.send(JSON.stringify({
       type: 'init',
       id: conn.id,
       players: Object.fromEntries(this.players),
+      cycleStartTime: this.cycleStartTime,
+      farmerHost: conn.id === this.farmerHostId,
     }))
 
     this.room.broadcast(JSON.stringify({
@@ -42,6 +52,18 @@ export default class GameServer {
         id: conn.id,
         ...state,
       }), [conn.id])
+    }
+
+    if (data.type === 'farmer_state') {
+      if (conn.id === this.farmerHostId) {
+        this.room.broadcast(JSON.stringify({
+          type: 'farmer_state',
+          x: data.x,
+          z: data.z,
+          ry: data.ry,
+          anim: data.anim,
+        }), [conn.id])
+      }
     }
 
     if (data.type === 'chat') {
@@ -108,5 +130,17 @@ export default class GameServer {
       type: 'player_leave',
       id: conn.id,
     }))
+
+    // Reassign farmer host if needed
+    if (conn.id === this.farmerHostId) {
+      this.farmerHostId = null
+      for (const c of this.room.getConnections()) {
+        if (c.id !== conn.id) {
+          this.farmerHostId = c.id
+          c.send(JSON.stringify({ type: 'farmer_host' }))
+          break
+        }
+      }
+    }
   }
 }

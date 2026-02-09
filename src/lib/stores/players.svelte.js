@@ -1,5 +1,7 @@
 import { setCallbacks } from '../network.js'
 import { addMessage, setLoading } from '../stores/farmerChat.svelte.js'
+import { dayNight } from '../stores/dayNight.js'
+import { farmerSync } from '../stores/farmerSync.js'
 
 const ANIM_SHORT = { I: 'Idle', W: 'Walk', R: 'Gallop', O: 'Gallop_Jump' }
 const ANIM_TO_SHORT = { Idle: 'I', Walk: 'W', Gallop: 'R', Gallop_Jump: 'O' }
@@ -31,7 +33,7 @@ let remotePlayers = $state(new Map())
 export function getRemotePlayers() { return remotePlayers }
 
 setCallbacks({
-  init(id, existingPlayers) {
+  init(id, existingPlayers, cycleStartTime, isFarmerHost) {
     const map = new Map()
     for (const [pid, pstate] of Object.entries(existingPlayers)) {
       const rp = new RemotePlayerState()
@@ -39,6 +41,8 @@ setCallbacks({
       map.set(pid, rp)
     }
     remotePlayers = map
+    dayNight.cycleStartTime = cycleStartTime
+    farmerSync.isHost = isFarmerHost
   },
   join(id) {
     const map = new Map(remotePlayers)
@@ -63,5 +67,12 @@ setCallbacks({
   chatResponse(text) {
     setLoading(false)
     addMessage('farmer', text)
+  },
+  farmerState(data) {
+    farmerSync.remote = { x: data.x, z: data.z, ry: data.ry, anim: data.anim }
+  },
+  farmerHost() {
+    farmerSync.isHost = true
+    farmerSync.remote = null
   },
 })

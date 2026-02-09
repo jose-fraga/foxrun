@@ -5,6 +5,8 @@
   import { getTerrainHeight } from '../utils/terrain.js'
   import { localPlayerPos } from '../utils/playerPosition.js'
   import { setNearFarmer, openChat, getFarmerChat } from '../stores/farmerChat.svelte.js'
+  import { farmerSync } from '../stores/farmerSync.js'
+  import { sendFarmerState } from '../network.js'
 
   const gltf = useGltf('/Farmer.glb')
 
@@ -76,7 +78,7 @@
 
     const chat = getFarmerChat()
 
-    // --- Speech bubble typing logic ---
+    // --- Speech bubble typing logic (all clients) ---
     if (chat.messages.length > lastMsgCount) {
       const last = chat.messages[chat.messages.length - 1]
       if (last.role === 'farmer') {
@@ -108,70 +110,90 @@
       }
     }
 
-    // --- Distance to player ---
+    // --- Distance to local player (all clients, for chat UI) ---
     const dx = localPlayerPos.x - farmer.x
     const dz = localPlayerPos.z - farmer.z
     const playerDist = Math.sqrt(dx * dx + dz * dz)
 
-    // Player proximity
     if (playerDist < INTERACT_DIST) {
-      if (!chat.nearFarmer) {
-        setNearFarmer(true)
-      }
-
-      // Face the player
-      const targetRotY = Math.atan2(dx, dz)
-      let dAngle = targetRotY - farmer.rotY
-      if (dAngle > Math.PI) dAngle -= 2 * Math.PI
-      if (dAngle < -Math.PI) dAngle += 2 * Math.PI
-      farmer.rotY += dAngle * Math.min(1, 5 * delta)
-
-      // Stop walking
-      if (farmer.state === 'walking') {
-        farmer.state = 'idle'
-        farmer.timer = 2
-      }
-
-      if (chat.open) {
-        playAction('CharacterArmature|Idle')
-      } else {
-        playAction('CharacterArmature|Wave')
-      }
+      if (!chat.nearFarmer) setNearFarmer(true)
     } else {
-      if (chat.nearFarmer) {
-        setNearFarmer(false)
-      }
+      if (chat.nearFarmer) setNearFarmer(false)
+    }
 
-      // Normal wandering behavior
-      farmer.timer -= delta
+    // --- Host: run farmer AI and broadcast state ---
+    if (farmerSync.isHost) {
+      if (playerDist < INTERACT_DIST) {
+        // Face the player
+        const targetRotY = Math.atan2(dx, dz)
+        let dAngle = targetRotY - farmer.rotY
+        if (dAngle > Math.PI) dAngle -= 2 * Math.PI
+        if (dAngle < -Math.PI) dAngle += 2 * Math.PI
+        farmer.rotY += dAngle * Math.min(1, 5 * delta)
 
-      if (farmer.state === 'idle') {
-        playAction('CharacterArmature|Idle')
-        if (farmer.timer <= 0) {
-          farmer.state = 'walking'
-          pickTarget()
-          playAction('CharacterArmature|Walk')
-        }
-      } else if (farmer.state === 'walking') {
-        const tx = farmer.targetX - farmer.x
-        const tz = farmer.targetZ - farmer.z
-        const dist = Math.sqrt(tx * tx + tz * tz)
-
-        if (dist < 0.5) {
+        if (farmer.state === 'walking') {
           farmer.state = 'idle'
-          farmer.timer = 4 + rand() * 8
+          farmer.timer = 2
+        }
+
+        if (chat.open) {
           playAction('CharacterArmature|Idle')
         } else {
-          const targetRotY = Math.atan2(tx, tz)
-          let dAngle = targetRotY - farmer.rotY
-          if (dAngle > Math.PI) dAngle -= 2 * Math.PI
-          if (dAngle < -Math.PI) dAngle += 2 * Math.PI
-          farmer.rotY += dAngle * Math.min(1, 3 * delta)
+          playAction('CharacterArmature|Wave')
+        }
+      } else {
+        // Normal wandering behavior
+        farmer.timer -= delta
 
-          farmer.x += (tx / dist) * WALK_SPEED * delta
-          farmer.z += (tz / dist) * WALK_SPEED * delta
+        if (farmer.state === 'idle') {
+          playAction('CharacterArmature|Idle')
+          if (farmer.timer <= 0) {
+            farmer.state = 'walking'
+            pickTarget()
+            playAction('CharacterArmature|Walk')
+          }
+        } else if (farmer.state === 'walking') {
+          const tx = farmer.targetX - farmer.x
+          const tz = farmer.targetZ - farmer.z
+          const dist = Math.sqrt(tx * tx + tz * tz)
+
+          if (dist < 0.5) {
+            farmer.state = 'idle'
+            farmer.timer = 4 + rand() * 8
+            playAction('CharacterArmature|Idle')
+          } else {
+            const targetRotY = Math.atan2(tx, tz)
+            let dAngle = targetRotY - farmer.rotY
+            if (dAngle > Math.PI) dAngle -= 2 * Math.PI
+            if (dAngle < -Math.PI) dAngle += 2 * Math.PI
+            farmer.rotY += dAngle * Math.min(1, 3 * delta)
+
+            farmer.x += (tx / dist) * WALK_SPEED * delta
+            farmer.z += (tz / dist) * WALK_SPEED * delta
+          }
         }
       }
+
+      // Broadcast farmer state to other clients
+      sendFarmerState({
+        x: Math.round(farmer.x * 100) / 100,
+        z: Math.round(farmer.z * 100) / 100,
+        ry: Math.round(farmer.rotY * 1000) / 1000,
+        anim: farmer.currentAction,
+      })
+    }
+    // --- Non-host: interpolate from remote state ---
+    else if (farmerSync.remote) {
+      const t = 1 - Math.exp(-10 * delta)
+      farmer.x += (farmerSync.remote.x - farmer.x) * t
+      farmer.z += (farmerSync.remote.z - farmer.z) * t
+
+      let dAngle = farmerSync.remote.ry - farmer.rotY
+      if (dAngle > Math.PI) dAngle -= 2 * Math.PI
+      if (dAngle < -Math.PI) dAngle += 2 * Math.PI
+      farmer.rotY += dAngle * t
+
+      playAction(farmerSync.remote.anim)
     }
 
     // Update Three.js positions
