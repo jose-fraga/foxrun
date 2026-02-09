@@ -12,7 +12,14 @@
   import { loadModel } from '../utils/modelLoader.js'
   import { getFarmerChat } from '../stores/farmerChat.svelte.js'
 
+  let { onready } = $props()
+
   const selectedChar = $derived(getSelectedCharacter())
+
+  // Cinematic camera mode (add ?cinematic to URL to use)
+  const cinematic = new URLSearchParams(window.location.search).has('cinematic')
+  const cinematicPos = new THREE.Vector3(10, 30, 70)
+  const cinematicLook = new THREE.Vector3(30, 5, -15)
 
   // Animation
   let mixer = null
@@ -27,6 +34,7 @@
     }
     currentAction = null
     playAction('Idle')
+    onready?.()
   }
 
   function playAction(name) {
@@ -45,8 +53,10 @@
   // Camera (smooth third-person)
   const idealOffset = new THREE.Vector3(0, 3, -6)
   const idealLookat = new THREE.Vector3(0, 2, 6)
-  const currentPosition = new THREE.Vector3()
-  const currentLookat = new THREE.Vector3()
+  // Initialize camera to starting player position to avoid lerp-from-origin
+  const _initQuat = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI)
+  const currentPosition = new THREE.Vector3().copy(idealOffset).applyQuaternion(_initQuat).add(new THREE.Vector3(55, 0, -40))
+  const currentLookat = new THREE.Vector3().copy(idealLookat).applyQuaternion(_initQuat).add(new THREE.Vector3(55, 0, -40))
 
   // Reusable vectors (avoid GC pressure)
   const _dir = new THREE.Vector3()
@@ -238,14 +248,19 @@
     // Camera
     playerQuat.setFromAxisAngle(_up, rotation)
     if (camera) {
-      _playerPos.set(playerX, playerY, playerZ)
-      _offset.copy(idealOffset).applyQuaternion(playerQuat).add(_playerPos)
-      _lookat.copy(idealLookat).applyQuaternion(playerQuat).add(_playerPos)
-      const t = 1.0 - Math.pow(0.01, delta)
-      currentPosition.lerp(_offset, t)
-      currentLookat.lerp(_lookat, t)
-      camera.position.copy(currentPosition)
-      camera.lookAt(currentLookat)
+      if (cinematic) {
+        camera.position.copy(cinematicPos)
+        camera.lookAt(cinematicLook)
+      } else {
+        _playerPos.set(playerX, playerY, playerZ)
+        _offset.copy(idealOffset).applyQuaternion(playerQuat).add(_playerPos)
+        _lookat.copy(idealLookat).applyQuaternion(playerQuat).add(_playerPos)
+        const t = 1.0 - Math.pow(0.01, delta)
+        currentPosition.lerp(_offset, t)
+        currentLookat.lerp(_lookat, t)
+        camera.position.copy(currentPosition)
+        camera.lookAt(currentLookat)
+      }
     }
 
     // Send state to network (throttled internally by network.js)
@@ -271,7 +286,7 @@
   bind:ref={camera}
 />
 
-<T.Group>
+<T.Group visible={!cinematic}>
   <RigidBody
     type="kinematicPosition"
     bind:rigidBody

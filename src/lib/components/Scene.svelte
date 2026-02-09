@@ -18,6 +18,8 @@
   import Fireflies from './Fireflies.svelte'
   import { getRemotePlayers } from '../stores/players.svelte.js'
 
+  let { onready } = $props()
+
   const remotePlayers = $derived(getRemotePlayers())
 
   const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
@@ -27,7 +29,7 @@
 
 <World>
   <!-- Local player (character + third-person camera) -->
-  <LocalPlayer />
+  <LocalPlayer {onready} />
 
   <!-- Remote players -->
   {#each [...remotePlayers] as [id, playerState] (id)}
