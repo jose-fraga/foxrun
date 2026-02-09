@@ -5,7 +5,9 @@
 
   let cloudRingScene = $state(null)
 
-  const loader = new FBXLoader()
+  const fbxManager = new THREE.LoadingManager()
+  fbxManager.onError = () => {} // Silently ignore embedded PSD references in FBX
+  const loader = new FBXLoader(fbxManager)
   const textureLoader = new THREE.TextureLoader()
   const texture = textureLoader.load('/polygon-starter/textures/PolygonStarter_Texture_01.png')
 
