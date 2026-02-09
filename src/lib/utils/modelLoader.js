@@ -5,31 +5,22 @@ const loader = new GLTFLoader()
 const cache = new Map()
 
 // --- Brush-painted style: 3-band gradient map for toon shading ---
-const gradientCanvas = document.createElement('canvas')
-gradientCanvas.width = 3
-gradientCanvas.height = 1
-const gCtx = gradientCanvas.getContext('2d')
-gCtx.fillStyle = '#808080'
-gCtx.fillRect(0, 0, 1, 1)
-gCtx.fillStyle = '#b0b0b0'
-gCtx.fillRect(1, 0, 1, 1)
-gCtx.fillStyle = '#ffffff'
-gCtx.fillRect(2, 0, 1, 1)
-export const gradientMap = new THREE.CanvasTexture(gradientCanvas)
+const gradData = new Uint8Array([128, 128, 128, 255, 176, 176, 176, 255, 255, 255, 255, 255])
+export const gradientMap = new THREE.DataTexture(gradData, 3, 1, THREE.RGBAFormat)
 gradientMap.minFilter = THREE.NearestFilter
 gradientMap.magFilter = THREE.NearestFilter
+gradientMap.needsUpdate = true
 
 export function applyBrushPaintStyle(gltf) {
   const scene = gltf.scene
-  if (scene.userData._brushPainted) return
-  scene.userData._brushPainted = true
 
   scene.traverse((child) => {
     if (!child.isMesh) return
 
-    // Replace materials with toon versions
+    // Replace materials with toon versions (skip if already toon)
     const mats = Array.isArray(child.material) ? child.material : [child.material]
     const toonMats = mats.map((mat) => {
+      if (mat.isMeshToonMaterial) return mat
       const toon = new THREE.MeshToonMaterial({
         map: mat.map || null,
         color: mat.color || new THREE.Color(0xffffff),
