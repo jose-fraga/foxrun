@@ -16,12 +16,23 @@
   );
 
   function joinRoom() {
-    // Show loading screen
+    // Show loading screen and reset progress
     const loadEl = document.getElementById('loading-screen');
     if (loadEl) {
       loadEl.style.display = '';
       loadEl.classList.remove('fade-out');
     }
+    const bar = document.getElementById('progress-fill');
+    if (bar) bar.style.width = '0%';
+
+    // Track real loading progress via Three.js DefaultLoadingManager
+    THREE.DefaultLoadingManager.onProgress = (_url, loaded, total) => {
+      const fill = document.getElementById('progress-fill');
+      if (fill) {
+        fill.style.width = Math.round((loaded / total) * 100) + '%';
+      }
+    };
+
     connect(roomId);
     connected = true;
     fading = true;
@@ -31,14 +42,18 @@
   }
 
   function onGameReady() {
+    // Ensure bar fills to 100%
     const bar = document.getElementById('progress-fill');
-    if (bar) bar.classList.add('complete');
+    if (bar) bar.style.width = '100%';
+
+    // Wait 1 second after 100%, then fade out
     setTimeout(() => {
       const el = document.getElementById('loading-screen');
       if (el) {
         el.classList.add('fade-out');
         setTimeout(() => el.remove(), 700);
       }
+      THREE.DefaultLoadingManager.onProgress = undefined;
     }, 1000);
   }
 
@@ -64,7 +79,13 @@
     </div>
     <div class="controls-layer">
       <div class="controls">
-        <input bind:value={roomId} placeholder="Room: default" />
+        <div class="brush-input-wrap">
+          <svg class="brush-border" viewBox="0 0 260 48" preserveAspectRatio="none">
+            <path d="M6 8 Q20 3 60 6 Q130 2 200 6 Q240 3 254 8 Q258 16 256 24 Q258 32 254 40 Q240 45 200 42 Q130 46 60 42 Q20 45 6 40 Q2 32 4 24 Q2 16 6 8Z"
+              stroke="rgba(255,255,255,0.35)" stroke-width="1.8" fill="rgba(0,0,0,0.3)" stroke-linejoin="round" stroke-linecap="round"/>
+          </svg>
+          <input bind:value={roomId} placeholder="Room: default" />
+        </div>
         <button onclick={joinRoom}>Play</button>
       </div>
     </div>
@@ -153,24 +174,32 @@
     gap: 0.8rem;
   }
 
+  .brush-input-wrap {
+    position: relative;
+    width: 220px;
+  }
+  .brush-border {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+  }
   .controls input {
+    width: 100%;
     padding: 0.6rem 1.2rem;
     font-size: 1.1rem;
     font-family: "permanent-marker", sans-serif;
-    border: 2px solid rgba(255, 255, 255, 0.4);
-    border-radius: 8px;
+    border: none;
     outline: none;
     text-align: center;
-    background: rgba(0, 0, 0, 0.3);
+    background: none;
     color: white;
-    backdrop-filter: blur(8px);
-    width: 220px;
+    position: relative;
+    z-index: 1;
   }
   .controls input::placeholder {
     color: rgba(255, 255, 255, 0.4);
-  }
-  .controls input:focus {
-    border-color: rgba(255, 255, 255, 0.7);
   }
 
   .controls button {

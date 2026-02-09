@@ -196,8 +196,15 @@
     {#if showBubble && displayedText}
       <HTML position.y={7} center pointerEvents="none">
         <div class="farmer-bubble" class:thinking={isThinking}>
+          <svg class="bubble-border" viewBox="0 0 400 120" preserveAspectRatio="none">
+            <!-- Brush-painted bubble shape -->
+            <path d="M12 12 Q20 5 80 8 Q160 3 200 6 Q280 3 340 8 Q380 5 388 12 Q394 30 392 55 Q394 80 388 95 Q380 102 340 99 Q280 104 220 100 L200 118 L185 100 Q120 104 60 99 Q20 102 12 95 Q6 80 8 55 Q6 30 12 12Z"
+              stroke="rgba(120,90,40,0.4)" stroke-width="2" fill="rgba(255,250,235,0.95)" stroke-linejoin="round" stroke-linecap="round"/>
+            <!-- Subtle highlight strokes -->
+            <path d="M20 14 Q100 7 200 10 Q300 7 380 14"
+              stroke="rgba(120,90,40,0.15)" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+          </svg>
           <p>{displayedText}</p>
-          <div class="farmer-bubble-tail"></div>
         </div>
       </HTML>
     {/if}
@@ -217,36 +224,31 @@
 
 <style>
   :global(.farmer-bubble) {
-    background: rgba(255, 250, 235, 0.95);
-    border-radius: 14px;
-    padding: 8px 14px;
+    position: relative;
     max-width: 500px;
     min-width: 300px;
-    font-family: sans-serif;
-    font-size: 14px;
-    color: #3a2a10;
-    line-height: 1.35;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-    position: relative;
-    text-align: left;
-    white-space: pre-wrap;
-    word-wrap: break-word;
     pointer-events: none;
     user-select: none;
+    filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.25));
+  }
+  :global(.farmer-bubble .bubble-border) {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
   }
   :global(.farmer-bubble p) {
     margin: 0;
-  }
-  :global(.farmer-bubble-tail) {
-    position: absolute;
-    bottom: -8px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 0;
-    height: 0;
-    border-left: 8px solid transparent;
-    border-right: 8px solid transparent;
-    border-top: 8px solid rgba(255, 250, 235, 0.95);
+    position: relative;
+    z-index: 1;
+    padding: 14px 20px 22px;
+    font-family: "permanent-marker", sans-serif;
+    font-size: 14px;
+    color: #3a2a10;
+    line-height: 1.4;
+    text-align: left;
+    white-space: pre-wrap;
+    word-wrap: break-word;
   }
   :global(.farmer-bubble.thinking p) {
     animation: farmer-dots 1.2s ease-in-out infinite;

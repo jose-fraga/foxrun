@@ -56,17 +56,29 @@
 
 {#if chat.open}
   <div class="input-bar">
-    <input
-      type="text"
-      bind:value={inputText}
-      onkeydown={handleInputKeydown}
-      placeholder="Say something..."
-      disabled={chat.loading}
-      autofocus
-    />
-    <button onclick={sendMessage} disabled={chat.loading}>
-      {chat.loading ? '...' : 'Send'}
-    </button>
+    <div class="brush-input-wrap">
+      <svg class="brush-border" viewBox="0 0 400 44" preserveAspectRatio="none">
+        <path d="M6 8 Q20 3 100 6 Q200 2 300 6 Q380 3 394 8 Q398 16 396 22 Q398 30 394 36 Q380 41 300 38 Q200 42 100 38 Q20 41 6 36 Q2 30 4 22 Q2 16 6 8Z"
+          stroke="rgba(180,140,80,0.5)" stroke-width="1.5" fill="rgba(20,15,10,0.85)" stroke-linejoin="round" stroke-linecap="round"/>
+      </svg>
+      <input
+        type="text"
+        bind:value={inputText}
+        onkeydown={handleInputKeydown}
+        placeholder="Say something..."
+        disabled={chat.loading}
+        autofocus
+      />
+    </div>
+    <div class="brush-btn-wrap">
+      <svg class="brush-border" viewBox="0 0 80 44" preserveAspectRatio="none">
+        <path d="M6 8 Q16 3 40 6 Q64 3 74 8 Q78 16 76 22 Q78 30 74 36 Q64 41 40 38 Q16 41 6 36 Q2 30 4 22 Q2 16 6 8Z"
+          stroke="rgba(180,140,80,0.5)" stroke-width="1.5" fill="rgba(180,140,80,0.35)" stroke-linejoin="round" stroke-linecap="round"/>
+      </svg>
+      <button onclick={sendMessage} disabled={chat.loading}>
+        {chat.loading ? '...' : 'Send'}
+      </button>
+    </div>
   </div>
 {/if}
 
@@ -101,45 +113,62 @@
     left: 50%;
     transform: translateX(-50%);
     display: flex;
-    gap: 0.4rem;
+    gap: 0.5rem;
     z-index: 100;
     width: min(400px, 85vw);
+    align-items: center;
   }
-  .input-bar input {
+
+  .brush-input-wrap,
+  .brush-btn-wrap {
+    position: relative;
+  }
+  .brush-input-wrap {
     flex: 1;
+  }
+
+  .brush-border {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+  }
+
+  .input-bar input {
+    width: 100%;
     padding: 0.6rem 1rem;
-    border: 1px solid rgba(180, 140, 80, 0.5);
-    border-radius: 20px;
-    background: rgba(20, 15, 10, 0.85);
+    border: none;
+    background: none;
     color: #e8d4a0;
     font-size: 0.9rem;
     font-family: "permanent-marker", sans-serif;
     outline: none;
-    backdrop-filter: blur(6px);
+    position: relative;
+    z-index: 1;
   }
   .input-bar input::placeholder {
     color: rgba(232, 212, 160, 0.4);
   }
-  .input-bar input:focus {
-    border-color: rgba(180, 140, 80, 0.8);
-  }
   .input-bar input:disabled {
     opacity: 0.6;
   }
+
   .input-bar button {
     padding: 0.6rem 1.2rem;
-    background: rgba(180, 140, 80, 0.4);
+    background: none;
     color: #e8d4a0;
-    border: 1px solid rgba(180, 140, 80, 0.5);
-    border-radius: 20px;
+    border: none;
     cursor: pointer;
     font-size: 0.85rem;
     font-weight: bold;
     font-family: "permanent-marker", sans-serif;
-    backdrop-filter: blur(6px);
+    position: relative;
+    z-index: 1;
+    white-space: nowrap;
   }
-  .input-bar button:hover {
-    background: rgba(180, 140, 80, 0.6);
+  .brush-btn-wrap:hover .brush-border path {
+    fill: rgba(180, 140, 80, 0.5);
   }
   .input-bar button:disabled {
     opacity: 0.5;

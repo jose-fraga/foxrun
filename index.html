@@ -64,23 +64,11 @@
         width: 0%;
         height: 100%;
         overflow: hidden;
-        animation: progressFill 8s ease-out forwards;
-      }
-      .progress-fill.complete {
-        animation: none;
-        width: 100%;
-        transition: width 0.4s ease-out;
+        transition: width 0.3s ease-out;
       }
       .progress-fill svg {
         width: 220px;
         height: 18px;
-      }
-      @keyframes progressFill {
-        0% { width: 0%; }
-        30% { width: 40%; }
-        60% { width: 65%; }
-        80% { width: 78%; }
-        100% { width: 85%; }
       }
       #loading-screen p {
         font-family: "permanent-marker", sans-serif;

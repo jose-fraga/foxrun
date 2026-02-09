@@ -28,12 +28,20 @@
 
 <!-- Wolf icon button -->
 <button class="toggle-btn" class:open={isOpen} onpointerdown={toggleOpen}>
-  <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M12 8 L8 28 L14 32 L10 52 L20 44 L26 56 L32 46 L38 56 L44 44 L54 52 L50 32 L56 28 L52 8 L40 20 L32 14 L24 20 Z"
-      stroke="white" stroke-width="2.5" fill="rgba(255,255,255,0.1)" stroke-linejoin="round"/>
-    <circle cx="24" cy="30" r="2.5" fill="white"/>
-    <circle cx="40" cy="30" r="2.5" fill="white"/>
-    <path d="M28 38 Q32 42 36 38" stroke="white" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <svg viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <!-- Brush-painted border -->
+    <path d="M8 6 Q20 3 36 5 Q52 3 64 6 Q67 20 65 36 Q67 52 64 66 Q52 69 36 67 Q20 69 8 66 Q5 52 7 36 Q5 20 8 6Z"
+      stroke="white" stroke-width="2.5" fill="rgba(0,0,0,0.35)" stroke-linejoin="round" stroke-linecap="round" opacity="0.8"/>
+    <path d="M10 8 Q22 5 36 7 Q50 5 62 8"
+      stroke="white" stroke-width="1.5" fill="none" stroke-linecap="round" opacity="0.3"/>
+    <path d="M62 64 Q50 67 36 65 Q22 67 10 64"
+      stroke="white" stroke-width="1.5" fill="none" stroke-linecap="round" opacity="0.3"/>
+    <!-- Wolf icon -->
+    <path d="M16 14 L13 30 L18 33 L15 48 L23 42 L28 52 L36 44 L44 52 L49 42 L57 48 L54 33 L59 30 L56 14 L46 24 L36 19 L26 24 Z"
+      stroke="white" stroke-width="2" fill="rgba(255,255,255,0.08)" stroke-linejoin="round"/>
+    <circle cx="28" cy="33" r="2.5" fill="white"/>
+    <circle cx="44" cy="33" r="2.5" fill="white"/>
+    <path d="M32 40 Q36 44 40 40" stroke="white" stroke-width="2" fill="none" stroke-linecap="round"/>
   </svg>
 </button>
 
@@ -82,24 +90,21 @@
     left: 1.2rem;
     width: 56px;
     height: 56px;
-    padding: 8px;
-    background: rgba(0, 0, 0, 0.4);
-    border: 2.5px solid rgba(255, 255, 255, 0.45);
-    border-radius: 6px;
+    padding: 0;
+    background: none;
+    border: none;
     cursor: pointer;
     z-index: 101;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: background 0.15s, border-color 0.15s;
-    box-shadow:
-      inset 0 0 0 1px rgba(0, 0, 0, 0.2),
-      2px 3px 8px rgba(0, 0, 0, 0.4);
+    filter: drop-shadow(2px 3px 4px rgba(0, 0, 0, 0.5));
+    transition: transform 0.12s, filter 0.12s;
   }
 
   .toggle-btn:hover, .toggle-btn.open {
-    background: rgba(0, 0, 0, 0.6);
-    border-color: white;
+    transform: scale(1.1);
+    filter: drop-shadow(2px 4px 6px rgba(0, 0, 0, 0.6));
   }
 
   .toggle-btn svg {
