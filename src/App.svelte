@@ -12,11 +12,15 @@
   import "./lib/stores/players.svelte.js";
   import { resetQuests } from "./lib/stores/questProgress.svelte.js";
   import { getInteractionPrompt } from "./lib/stores/interactionPrompt.svelte.js";
+  import { isMuted, toggleMute } from "./lib/stores/sound.svelte.js";
+  import { playClick } from "./lib/utils/uiSound.js";
 
   const prompt = $derived(getInteractionPrompt());
+  const muted = $derived(isMuted());
   const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
   function triggerInteract() {
+    playClick();
     window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyE' }));
   }
 
@@ -51,6 +55,32 @@
     connected = true;
   }
 
+  // Soundtrack — plays, waits 5s gap, then repeats
+  const soundtrack = new Audio('/sounds/soundtrack.wav');
+  soundtrack.volume = 0;
+  const SOUNDTRACK_VOL = 0.15;
+
+  soundtrack.addEventListener('ended', () => {
+    setTimeout(() => {
+      if (isMuted()) return;
+      soundtrack.currentTime = 0;
+      soundtrack.volume = SOUNDTRACK_VOL;
+      soundtrack.play().catch(() => {});
+    }, 5000);
+  });
+
+  function fadeInSoundtrack() {
+    if (isMuted()) return;
+    soundtrack.play().catch(() => {});
+    let vol = 0;
+    const fade = setInterval(() => {
+      if (isMuted()) { clearInterval(fade); return; }
+      vol += 0.01;
+      if (vol >= SOUNDTRACK_VOL) { vol = SOUNDTRACK_VOL; clearInterval(fade); }
+      soundtrack.volume = vol;
+    }, 100);
+  }
+
   function onGameReady() {
     // Ensure bar fills to 100%
     const bar = document.getElementById('progress-fill');
@@ -65,8 +95,9 @@
       }
       THREE.DefaultLoadingManager.onProgress = undefined;
 
-      // Show intro message after loading screen fades
+      // Start soundtrack and show intro message after loading screen fades
       setTimeout(() => {
+        fadeInSoundtrack();
         showIntro = true;
         setTimeout(() => { showIntro = false; }, 6000);
       }, 900);
@@ -84,6 +115,16 @@
       connect(roomId);
       connected = true;
     }, 100);
+  }
+
+  function handleSoundToggle() {
+    playClick();
+    const nowMuted = toggleMute();
+    if (nowMuted) {
+      soundtrack.pause();
+    } else if (connected) {
+      soundtrack.play().catch(() => {});
+    }
   }
 
   function handleKeydown(e) {
@@ -126,6 +167,33 @@
     <Scene onready={onGameReady} />
   </Canvas>
   <CharacterSelect />
+  <button class="sound-btn" onclick={handleSoundToggle}>
+    <svg viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Brush-painted border -->
+      <path d="M8 6 Q20 3 36 5 Q52 3 64 6 Q67 20 65 36 Q67 52 64 66 Q52 69 36 67 Q20 69 8 66 Q5 52 7 36 Q5 20 8 6Z"
+        stroke="white" stroke-width="2.5" fill="rgba(0,0,0,0.35)" stroke-linejoin="round" stroke-linecap="round" opacity="0.8"/>
+      <path d="M10 8 Q22 5 36 7 Q50 5 62 8"
+        stroke="white" stroke-width="1.5" fill="none" stroke-linecap="round" opacity="0.3"/>
+      <path d="M62 64 Q50 67 36 65 Q22 67 10 64"
+        stroke="white" stroke-width="1.5" fill="none" stroke-linecap="round" opacity="0.3"/>
+      <!-- Brush-painted speaker -->
+      <path d="M18 26 L17 30 L18 38 L19 44 L20 46 L26 46 L29 47 L33 50 L37 54 L39 53 L40 50 L39 22 L38 19 L36 20 L32 23 L28 26 L24 27 Z"
+        stroke="white" stroke-width="2" fill="rgba(255,255,255,0.08)" stroke-linejoin="round" stroke-linecap="round"/>
+      {#if !muted}
+        <!-- Brush sound waves -->
+        <path d="M45 28 L46 31 Q48 36 46 41 L45 44"
+          stroke="white" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M51 22 L53 27 Q56 36 53 45 L51 50"
+          stroke="white" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      {:else}
+        <!-- Brush mute X -->
+        <path d="M43 26 L46 31 L49 36 L52 41 L55 46"
+          stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+        <path d="M55 26 L52 31 L49 36 L46 41 L43 46"
+          stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+      {/if}
+    </svg>
+  </button>
   <TouchControls />
   <FarmerChat />
   {#if prompt}
@@ -273,6 +341,33 @@
     100% { opacity: 0; transform: translateX(-50%) translateY(-8px); }
   }
 
+  .sound-btn {
+    position: fixed;
+    bottom: 1.2rem;
+    left: calc(1.2rem + 56px + 0.5rem);
+    width: 56px;
+    height: 56px;
+    padding: 0;
+    background: none;
+    border: none;
+    cursor: pointer;
+    z-index: 101;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    filter: drop-shadow(2px 3px 4px rgba(0, 0, 0, 0.5));
+    transition: transform 0.12s, filter 0.12s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .sound-btn:hover {
+    transform: scale(1.1);
+    filter: drop-shadow(2px 4px 6px rgba(0, 0, 0, 0.6));
+  }
+  .sound-btn svg {
+    width: 100%;
+    height: 100%;
+  }
+
   @media (max-width: 768px) {
     .title-layer h1 {
       font-size: 2.2rem;
@@ -286,6 +381,12 @@
     }
     .intro-message {
       font-size: 1.1rem;
+    }
+    .sound-btn {
+      bottom: 0.8rem;
+      left: calc(0.8rem + 48px + 0.4rem);
+      width: 48px;
+      height: 48px;
     }
   }
 </style>

@@ -8,9 +8,28 @@
   import { POND_CENTER, POND_RADIUS } from '../utils/pond.js'
   import { resolveCollision } from '../utils/obstacles.js'
   import { loadModel } from '../utils/modelLoader.js'
+  import { isMuted } from '../stores/sound.svelte.js'
 
   const gltf = loadModel('/Deer.gltf')
   const remotePlayers = $derived(getRemotePlayers())
+
+  // Deer running sound — audible when fleeing near the player
+  const DEER_HEAR_DIST = 25
+  const deerRunAudio = new Audio('/sounds/grass_running.mp3')
+  deerRunAudio.loop = true
+  deerRunAudio.volume = 0
+  let deerAudioPlaying = false
+  let deerPitchTimer = 0
+
+  $effect(() => {
+    if (isMuted()) {
+      if (deerAudioPlaying) {
+        deerRunAudio.pause()
+        deerRunAudio.currentTime = 0
+        deerAudioPlaying = false
+      }
+    }
+  })
 
   const DEER_COUNT = 5
   const WALK_SPEED = 2.0
@@ -305,6 +324,38 @@
       }
       if (d.innerGroup) {
         d.innerGroup.rotation.y = d.rotY
+      }
+    }
+
+    // Deer running sound — volume based on closest fleeing deer
+    let closestFleeingDist = Infinity
+    for (const d of deer) {
+      if (d.state !== 'fleeing') continue
+      const ddx = d.x - localPlayerPos.x
+      const ddz = d.z - localPlayerPos.z
+      const dd = Math.sqrt(ddx * ddx + ddz * ddz)
+      if (dd < closestFleeingDist) closestFleeingDist = dd
+    }
+
+    if (closestFleeingDist < DEER_HEAR_DIST && !isMuted()) {
+      const vol = 0.3 * (1 - closestFleeingDist / DEER_HEAR_DIST)
+      deerRunAudio.volume = Math.max(0, vol)
+      if (!deerAudioPlaying) {
+        deerRunAudio.playbackRate = 1.3 + Math.random() * 0.2
+        deerRunAudio.play().catch(() => {})
+        deerAudioPlaying = true
+      }
+      // Randomize pitch periodically for variety
+      deerPitchTimer -= delta
+      if (deerPitchTimer <= 0) {
+        deerRunAudio.playbackRate = 1.2 + Math.random() * 0.4
+        deerPitchTimer = 0.2 + Math.random() * 0.15
+      }
+    } else {
+      if (deerAudioPlaying) {
+        deerRunAudio.pause()
+        deerRunAudio.currentTime = 0
+        deerAudioPlaying = false
       }
     }
 

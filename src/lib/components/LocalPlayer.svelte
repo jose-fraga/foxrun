@@ -12,8 +12,101 @@
   import { loadModel } from '../utils/modelLoader.js'
   import { getFarmerChat } from '../stores/farmerChat.svelte.js'
   import { getQuests, setCinematicDone } from '../stores/questProgress.svelte.js'
+  import { POND_CENTER, POND_RADIUS } from '../utils/pond.js'
+  import { isMuted } from '../stores/sound.svelte.js'
 
   let { onready } = $props()
+
+  // Footstep sounds
+  const grassWalkAudio = new Audio('/sounds/grass_walk.mp3')
+  const grassRunAudio = new Audio('/sounds/grass_running.mp3')
+  const waterWalkAudio = new Audio('/sounds/water_walking.mp3')
+  grassWalkAudio.loop = true
+  grassRunAudio.loop = true
+  waterWalkAudio.loop = true
+  grassWalkAudio.volume = 0.4
+  grassRunAudio.volume = 1.0
+  waterWalkAudio.volume = 0.5
+  let activeFootstep = null
+  let footstepFadeIn = null
+
+  $effect(() => {
+    if (isMuted()) {
+      if (activeFootstep) { activeFootstep.pause(); activeFootstep.currentTime = 0 }
+      activeFootstep = null
+    }
+  })
+
+  // Randomize pitch + volume for grass footsteps via Web Audio API
+  let audioCtx = null
+  const grassSources = new Map()
+  function setupGrassAudio(audio) {
+    if (grassSources.has(audio)) return
+    if (!audioCtx) audioCtx = new AudioContext()
+    const source = audioCtx.createMediaElementSource(audio)
+    const merger = audioCtx.createChannelMerger(1)
+    source.connect(merger)
+    const gain = audioCtx.createGain()
+    if (audio === grassRunAudio) {
+      // High-shelf EQ boost for brightness on run
+      const eq = audioCtx.createBiquadFilter()
+      eq.type = 'highshelf'
+      eq.frequency.value = 3000
+      eq.gain.value = 8
+      merger.connect(eq)
+      eq.connect(gain)
+    } else {
+      merger.connect(gain)
+    }
+    gain.connect(audioCtx.destination)
+    grassSources.set(audio, gain)
+  }
+  let grassVariationTimer = 0
+
+  function randomizeGrass() {
+    for (const [audio, gain] of grassSources) {
+      if (audio === activeFootstep) {
+        audio.playbackRate = 0.7 + Math.random() * 0.6
+        const isRun = audio === grassRunAudio
+        gain.gain.value = isRun ? (0.25 + Math.random() * 0.1) : (0.06 + Math.random() * 0.04)
+        // Jump to a random position in the run audio to break the loop pattern
+        if (isRun && audio.duration) {
+          audio.currentTime = Math.random() * audio.duration
+        }
+      }
+    }
+  }
+
+  function playFootstep(audio) {
+    if (activeFootstep === audio) return
+    if (activeFootstep) { activeFootstep.pause(); activeFootstep.currentTime = 0 }
+    if (audio === grassWalkAudio || audio === grassRunAudio) {
+      setupGrassAudio(audio)
+      if (audioCtx?.state === 'suspended') audioCtx.resume()
+      const gainNode = grassSources.get(audio)
+      if (gainNode) {
+        const fadeTarget = audio === grassRunAudio ? 0.3 : 0.08
+        gainNode.gain.value = 0
+        gainNode.gain.linearRampToValueAtTime(fadeTarget, audioCtx.currentTime + 0.3)
+      }
+    } else {
+      audio.volume = 0
+      footstepFadeIn = { audio, target: 0.5, step: 0 }
+    }
+    audio.play().catch(() => {})
+    activeFootstep = audio
+  }
+
+  function stopFootstep() {
+    if (activeFootstep) { activeFootstep.pause(); activeFootstep.currentTime = 0 }
+    activeFootstep = null
+  }
+
+  function isInPond(x, z) {
+    const dx = x - POND_CENTER[0]
+    const dz = z - POND_CENTER[1]
+    return Math.sqrt(dx * dx + dz * dz) < POND_RADIUS - 1
+  }
 
   const quests = $derived(getQuests())
 
@@ -121,6 +214,7 @@
 
     // Escape cinematic — tunnel under fence
     if (quests.escaped && !quests.cinematicDone) {
+      stopFootstep()
       if (!escapeCinematic) {
         escapeCinematic = true
         escapeTimer = 0
@@ -145,15 +239,20 @@
       const groundY = getTerrainHeight(hx, hz) + 1.5
 
       if (progress < 0.2) {
-        // Phase 1: Walk to entry hole
+        // Phase 1: Walk to entry hole, then turn to face farm
         const toDx = hx - playerX
         const toDz = hz - playerZ
         const toDist = Math.sqrt(toDx * toDx + toDz * toDz)
         if (toDist > 0.5) {
           playerX += (toDx / toDist) * 8 * delta
           playerZ += (toDz / toDist) * 8 * delta
-          rotation = Math.atan2(-toDx, -toDz)
         }
+        // Smoothly rotate toward farm (+z) throughout phase 1
+        const targetRot1 = Math.PI
+        let dAngle1 = targetRot1 - rotation
+        if (dAngle1 > Math.PI) dAngle1 -= 2 * Math.PI
+        if (dAngle1 < -Math.PI) dAngle1 += 2 * Math.PI
+        rotation += dAngle1 * Math.min(1, 4 * delta)
         playerY = groundY
         playAction('Walk')
       } else if (progress < 0.7) {
@@ -161,18 +260,23 @@
         const tunnelT = (progress - 0.2) / 0.5 // 0 → 1
         playerX = hx
         playerZ = hz + (exitZ - hz) * tunnelT
-        rotation = 0 // face -z (toward outside)
+        // Keep facing farm (+z) — smooth hold
+        const targetRot2 = Math.PI
+        let dAngle2 = targetRot2 - rotation
+        if (dAngle2 > Math.PI) dAngle2 -= 2 * Math.PI
+        if (dAngle2 < -Math.PI) dAngle2 += 2 * Math.PI
+        rotation += dAngle2 * Math.min(1, 6 * delta)
         // Sine curve dip — deepest in the middle
         const yOffset = -TUNNEL_DEPTH * Math.sin(tunnelT * Math.PI)
         playerY = groundY + yOffset
         playAction('Walk')
       } else {
-        // Phase 3: Stand outside fence, turn to face farm, idle
+        // Phase 3: Stand outside fence, turn to face outside, idle
         playerX = hx
         playerZ = exitZ
         playerY = groundY
-        // Smoothly rotate to face +z (back toward the farm)
-        const targetRot = Math.PI
+        // Smoothly rotate to face -z (toward freedom)
+        const targetRot = 0
         let dAngle = targetRot - rotation
         if (dAngle > Math.PI) dAngle -= 2 * Math.PI
         if (dAngle < -Math.PI) dAngle += 2 * Math.PI
@@ -218,7 +322,7 @@
       playerX = hx
       playerZ = hz - EXIT_OFFSET
       playerY = groundY
-      rotation = Math.PI // face +z (toward farm)
+      rotation = 0 // face -z (toward freedom)
       playAction('Idle')
       rigidBody.setTranslation({ x: playerX, y: playerY, z: playerZ }, true)
       rigidBody.setLinvel({ x: 0, y: 0, z: 0 }, true)
@@ -231,6 +335,7 @@
 
     // Handle stun (cow kick): 3s on ground + 1.5s getting up
     if (localPlayerPos.stunTimer > 0) {
+      stopFootstep()
       localPlayerPos.stunTimer -= delta
       if (localPlayerPos.stunTimer > 1.5) {
         // Falling / on the ground
@@ -368,6 +473,35 @@
       playAction(isSprinting ? 'Gallop' : 'Walk')
     } else {
       playAction('Idle')
+    }
+
+    // Footstep sounds
+    if (isMoving && isGrounded && !isMuted()) {
+      if (isInPond(playerX, playerZ)) {
+        playFootstep(waterWalkAudio)
+      } else if (isSprinting) {
+        playFootstep(grassRunAudio)
+      } else {
+        playFootstep(grassWalkAudio)
+      }
+    } else {
+      stopFootstep()
+    }
+
+    // Randomize grass pitch/volume periodically
+    if (activeFootstep && grassSources.has(activeFootstep)) {
+      grassVariationTimer -= delta
+      if (grassVariationTimer <= 0) {
+        randomizeGrass()
+        grassVariationTimer = 0.25 + Math.random() * 0.15
+      }
+    }
+
+    // Fade in water footstep audio
+    if (footstepFadeIn && footstepFadeIn.audio === activeFootstep) {
+      footstepFadeIn.step += delta * 2
+      footstepFadeIn.audio.volume = Math.min(footstepFadeIn.target, footstepFadeIn.step * footstepFadeIn.target)
+      if (footstepFadeIn.step >= 1) footstepFadeIn = null
     }
 
     // Camera

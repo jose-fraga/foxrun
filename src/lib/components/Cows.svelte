@@ -5,8 +5,18 @@
   import { getTerrainHeight } from '../utils/terrain.js'
   import { localPlayerPos, stunPlayer } from '../utils/playerPosition.js'
   import { loadModel } from '../utils/modelLoader.js'
+  import { isMuted } from '../stores/sound.svelte.js'
 
   const gltf = loadModel('/Cow.gltf')
+
+  // Cow sounds — each cow gets its own Audio with random moo intervals
+  const COW_HEAR_DIST = 30
+  const cowAudios = []
+  for (let i = 0; i < 4; i++) {
+    const audio = new Audio('/sounds/cow.mp3')
+    audio.volume = 0
+    cowAudios.push(audio)
+  }
 
   const COW_COUNT = 4
   const WALK_SPEED = 1.5
@@ -50,6 +60,7 @@
       innerGroup: null,
       behindTimer: 0,
       kickDelay: 0,
+      mooTimer: 5 + rand() * 15,
     }
     pickTarget(cow)
     return cow
@@ -78,7 +89,8 @@
   }
 
   useTask((delta) => {
-    for (const cow of cows) {
+    for (let i = 0; i < cows.length; i++) {
+      const cow = cows[i]
       if (!cow.mixer) continue
       cow.mixer.update(delta)
       cow.timer -= delta
@@ -182,6 +194,21 @@
       }
       if (cow.innerGroup) {
         cow.innerGroup.rotation.y = cow.rotY
+      }
+
+      // Cow moo sounds — play when near player, random intervals
+      const cdx = localPlayerPos.x - cow.x
+      const cdz = localPlayerPos.z - cow.z
+      const cowDist = Math.sqrt(cdx * cdx + cdz * cdz)
+      cow.mooTimer -= delta
+      if (cow.mooTimer <= 0 && cowDist < COW_HEAR_DIST && !isMuted()) {
+        const audio = cowAudios[i]
+        audio.volume = Math.max(0, 0.25 * (1 - cowDist / COW_HEAR_DIST))
+        audio.currentTime = 0
+        audio.play().catch(() => {})
+        cow.mooTimer = 20 + rand() * 40
+      } else if (cow.mooTimer <= 0) {
+        cow.mooTimer = 15 + rand() * 25
       }
 
     }

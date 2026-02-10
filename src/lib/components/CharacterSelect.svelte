@@ -1,5 +1,6 @@
 <script>
   import { characters, getSelectedCharacter, setSelectedCharacter } from '../stores/character.svelte.js'
+  import { playClick } from '../utils/uiSound.js'
 
   const selected = $derived(getSelectedCharacter())
   let isOpen = $state(false)
@@ -7,12 +8,14 @@
 
   function cycleCharacter(dir, e) {
     e.stopPropagation()
+    playClick()
     selectedIndex = (selectedIndex + dir + characters.length) % characters.length
     setSelectedCharacter(characters[selectedIndex])
   }
 
   function toggleOpen(e) {
     e.stopPropagation()
+    playClick()
     isOpen = !isOpen
   }
 

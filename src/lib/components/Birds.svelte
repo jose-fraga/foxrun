@@ -2,6 +2,25 @@
   import { T, useTask } from '@threlte/core'
   import * as THREE from 'three'
   import { dayNight } from '../stores/dayNight.js'
+  import { localPlayerPos } from '../utils/playerPosition.js'
+  import { isMuted } from '../stores/sound.svelte.js'
+
+  // Bird ambient sound — plays low when flocks are passing by
+  const birdAudio = new Audio('/sounds/birds.mp3')
+  birdAudio.loop = true
+  birdAudio.volume = 0
+  let birdAudioPlaying = false
+  const BIRD_HEAR_DIST = 200
+
+  $effect(() => {
+    if (isMuted()) {
+      birdAudio.volume = 0
+      if (birdAudioPlaying) {
+        birdAudio.pause()
+        birdAudioPlaying = false
+      }
+    }
+  })
 
   const birdMat = new THREE.MeshBasicMaterial({
     color: 0x000000,
@@ -135,6 +154,31 @@
       if (dist > despawnDistance) {
         groupRef.remove(flock.group)
         flocks.splice(i, 1)
+      }
+    }
+
+    // Bird sound — volume based on closest flock distance to player
+    let closestFlockDist = Infinity
+    for (const flock of flocks) {
+      if (!flock.group.visible) continue
+      const fdx = flock.group.position.x - localPlayerPos.x
+      const fdz = flock.group.position.z - localPlayerPos.z
+      const fd = Math.sqrt(fdx * fdx + fdz * fdz)
+      if (fd < closestFlockDist) closestFlockDist = fd
+    }
+
+    if (closestFlockDist < BIRD_HEAR_DIST && isDay && !isMuted()) {
+      const vol = 0.15 * (1 - closestFlockDist / BIRD_HEAR_DIST)
+      birdAudio.volume = Math.max(0, vol)
+      if (!birdAudioPlaying) {
+        birdAudio.play().catch(() => {})
+        birdAudioPlaying = true
+      }
+    } else {
+      birdAudio.volume = 0
+      if (birdAudioPlaying) {
+        birdAudio.pause()
+        birdAudioPlaying = false
       }
     }
   })
