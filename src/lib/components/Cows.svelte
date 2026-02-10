@@ -28,8 +28,8 @@
   const BULL_CHARGE_SPEED = 10
   const WALK_SPEED = 1.5
   const GROUP_CENTER = { x: -55, z: -55 }
-  const WANDER_RADIUS = 30
-  const MIN_SEPARATION = 5
+  const WANDER_RADIUS = 45
+  const MIN_SEPARATION = 8
 
   let seed = 42
   function rand() {
