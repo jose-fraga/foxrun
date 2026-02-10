@@ -16,7 +16,7 @@
   // Chicken cluck sound — plays occasionally when player is nearby
   const HEAR_DIST = 60
   const cluckAudio = new Audio('/sounds/chicken.mp3')
-  cluckAudio.volume = 0.4
+  cluckAudio.volume = 0.15
   let cluckCooldown = 1 + Math.random() * 2
 
   $effect(() => {
@@ -381,8 +381,8 @@
     if (closestDist < HEAR_DIST && !isMuted()) {
       cluckCooldown -= delta
       if (cluckCooldown <= 0) {
-        const vol = 0.4 * (1 - closestDist / HEAR_DIST)
-        cluckAudio.volume = Math.max(0.05, vol)
+        const vol = 0.15 * (1 - closestDist / HEAR_DIST)
+        cluckAudio.volume = Math.max(0.02, vol)
         cluckAudio.currentTime = 0
         cluckAudio.playbackRate = 0.9 + Math.random() * 0.3
         cluckAudio.play().catch(() => {})

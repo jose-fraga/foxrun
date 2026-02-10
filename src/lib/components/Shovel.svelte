@@ -107,8 +107,9 @@
   {#await shovelGltf then value}
     <T
       is={value.scene}
-      position={[SX, SY, SZ]}
+      position={[SX, SY + 0.3, SZ]}
       scale={3}
+      rotation.x={-Math.PI / 2}
       rotation.z={0.3}
       oncreate={() => setupShovel(value.scene)}
     />

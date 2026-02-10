@@ -100,6 +100,15 @@
   })
 
   let elapsed = 0
+  let exitTimer = 0
+  let showExitHole = $state(false)
+
+  $effect(() => {
+    if (showExit) {
+      exitTimer = 0
+      showExitHole = false
+    }
+  })
 
   function handleKeydown(e) {
     if (e.code === 'KeyE' && nearHole && ready) {
@@ -110,6 +119,12 @@
   }
 
   useTask((delta) => {
+    // Stagger exit hole appearance
+    if (showExit && !showExitHole) {
+      exitTimer += delta
+      if (exitTimer >= 1) showExitHole = true
+    }
+
     if (!ready) return
 
     elapsed += delta
@@ -140,13 +155,15 @@
 <svelte:window onkeydown={handleKeydown} />
 
 {#if showExit}
-  <!-- Entry hole (inside fence) — only after digging -->
+  <!-- Entry hole (inside fence) — appears immediately -->
   <T.Group position={[holeX, holeY, holeZ]}>
     <T.Mesh geometry={rimGeo} material={rimMat} position.y={0.02} />
     <T.Mesh geometry={holeGeo} material={holeMat} />
   </T.Group>
+{/if}
 
-  <!-- Exit hole (outside fence) -->
+{#if showExitHole}
+  <!-- Exit hole (outside fence) — appears after 1s delay -->
   <T.Group position={[holeX, exitY, exitZ]}>
     <T.Mesh geometry={rimGeo} material={rimMat} position.y={0.02} />
     <T.Mesh geometry={holeGeo} material={holeMat} />

@@ -163,7 +163,7 @@
 
   // Movement
   const speed = 10
-  const rotSpeed = 3
+  const rotSpeed = 3.5
   const jumpForce = 8
   const gravity = 20
   const keys = {}
@@ -205,7 +205,13 @@
     }
   }
 
+  function clearKeys() {
+    for (const k in keys) keys[k] = false
+    stopFootstep()
+  }
+
   let camera
+  let charGroup
 
   useTask((delta) => {
     if (!rigidBody) return
@@ -373,7 +379,7 @@
         _playerPos.set(playerX, playerY, playerZ)
         _offset.copy(idealOffset).applyQuaternion(playerQuat).add(_playerPos)
         _lookat.copy(idealLookat).applyQuaternion(playerQuat).add(_playerPos)
-        const t = 1.0 - Math.pow(0.0001, delta)
+        const t = 1.0 - Math.pow(0.000001, delta)
         currentPosition.lerp(_offset, t)
         currentLookat.lerp(_lookat, t)
         camera.position.copy(currentPosition)
@@ -504,8 +510,9 @@
       if (footstepFadeIn.step >= 1) footstepFadeIn = null
     }
 
-    // Camera
+    // Update character + camera
     playerQuat.setFromAxisAngle(_up, rotation)
+    if (charGroup) charGroup.rotation.y = rotation
     if (camera) {
       if (cinematic) {
         camera.position.copy(cinematicPos)
@@ -514,7 +521,7 @@
         _playerPos.set(playerX, playerY, playerZ)
         _offset.copy(idealOffset).applyQuaternion(playerQuat).add(_playerPos)
         _lookat.copy(idealLookat).applyQuaternion(playerQuat).add(_playerPos)
-        const t = 1.0 - Math.pow(0.0001, delta)
+        const t = 1.0 - Math.pow(0.000001, delta)
         currentPosition.lerp(_offset, t)
         currentLookat.lerp(_lookat, t)
         camera.position.copy(currentPosition)
@@ -535,7 +542,7 @@
   })
 </script>
 
-<svelte:window on:keydown={onKeyDown} on:keyup={onKeyUp} />
+<svelte:window on:keydown={onKeyDown} on:keyup={onKeyUp} on:blur={clearKeys} on:visibilitychange={clearKeys} />
 
 <T.PerspectiveCamera
   makeDefault
@@ -552,7 +559,7 @@
   >
     <Collider shape="capsule" args={[1.0, 0.5]} friction={0} restitution={0} />
 
-    <T.Group rotation.y={rotation}>
+    <T.Group oncreate={(ref) => { charGroup = ref }}>
       {#key selectedChar.id}
         {#await loadModel(selectedChar.model) then value}
           <T
