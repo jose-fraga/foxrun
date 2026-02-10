@@ -10,7 +10,7 @@
 
   const cropGltf = loadModel('/Crops.glb')
 
-  const X = 80
+  const X = 95
   const Z = -40
   const Y = getTerrainHeight(X, Z)
 
@@ -124,6 +124,7 @@
     is={value.scene}
     position={[X, Y - 0, Z]}
     scale={10}
+    rotation.y={Math.PI / 2}
     oncreate={() => setupCrop(value.scene)}
   />
 {/await}

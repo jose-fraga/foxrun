@@ -9,18 +9,22 @@
 
   // Small clusters scattered around the field
   const clusters = [
-    // Near the pond (but outside it)
-    { x: -42, z: -55, count: 4 },
+    // Near the pond
+    { x: -95, z: -85, count: 4 },
     // Between windmill and barn
-    { x: 25, z: -15, count: 3 },
+    { x: -20, z: 30, count: 3 },
     // North of the farmer
-    { x: -20, z: 30, count: 5 },
+    { x: -130, z: 120, count: 5 },
     // East side open field
-    { x: 80, z: 20, count: 3 },
+    { x: 120, z: 60, count: 3 },
     // South-west area
-    { x: -40, z: -100, count: 4 },
+    { x: -60, z: -150, count: 4 },
     // Near the fence, north
-    { x: 10, z: 100, count: 3 },
+    { x: 30, z: 160, count: 3 },
+    // Far east
+    { x: 180, z: -30, count: 3 },
+    // Near chicken coop
+    { x: -160, z: 50, count: 4 },
   ]
 
   let seed = 777

@@ -7,7 +7,7 @@
 
   // Inside the barn, back-right corner (barn floor is at y=0)
   const bales = [
-    { x: 62, z: -32, rotY: 0.3, scale: 50 },
+    { x: 65, z: -35, rotY: 0.3, scale: 50 },
   ];
 
   function setup(scene) {

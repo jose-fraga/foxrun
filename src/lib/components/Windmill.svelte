@@ -4,7 +4,7 @@
   import { addObstacle } from '../utils/obstacles.js'
   import { loadModel } from '../utils/modelLoader.js'
 
-  addObstacle(-50, 60, 3)
+  addObstacle(-100, 110, 3)
 
   const gltf = loadModel('/Windmill.glb')
 
@@ -34,7 +34,7 @@
   <T
     is={value.scene}
     scale={3}
-    position={[-50, 0, 60]}
+    position={[-100, 0, 110]}
     oncreate={() => setupWindmill(value.scene)}
   />
 {/await}

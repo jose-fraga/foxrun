@@ -24,6 +24,8 @@
   import AmbientSounds from './AmbientSounds.svelte'
   import Butterflies from './Butterflies.svelte'
   import HayBales from './HayBales.svelte'
+  import ChickenCoop from './ChickenCoop.svelte'
+  import Chickens from './Chickens.svelte'
 
   import { getRemotePlayers } from '../stores/players.svelte.js'
 
@@ -109,6 +111,10 @@
 
   <!-- Quest: Escape hole in fence -->
   <EscapeHole />
+
+  <!-- Chicken coop + hens -->
+  <ChickenCoop />
+  <Chickens />
 
   <!-- Crop field -->
   <Crops />

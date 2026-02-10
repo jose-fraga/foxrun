@@ -12,7 +12,7 @@
 
   const INTERACT_DIST = 4
   const SX = 55
-  const SZ = -25
+  const SZ = -14
   const SY = getTerrainHeight(SX, SZ)
 
   const quests = $derived(getQuests())

@@ -1,9 +1,9 @@
 function randomizeHolePosition() {
-  // Hole: along south fence (z ≈ -178), random X
-  const hx = -80 + Math.random() * 160  // -80 to 80
+  // Hole: along south fence (z ≈ -248), random X
+  const hx = -120 + Math.random() * 240  // -120 to 120
   return {
     holeX: Math.round(hx),
-    holeZ: -178,
+    holeZ: -248,
   }
 }
 

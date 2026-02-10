@@ -34,7 +34,7 @@
   const DEER_COUNT = 5
   const WALK_SPEED = 2.0
   const RUN_SPEED = 14
-  const FIELD_LIMIT = 160
+  const FIELD_LIMIT = 230
   const WANDER_RADIUS = 30
   const MIN_SEPARATION = 3
   const FLEE_DIST = 12

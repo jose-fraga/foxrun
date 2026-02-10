@@ -3,32 +3,16 @@
   import { addObstacle } from '../utils/obstacles.js'
   import { loadModel } from '../utils/modelLoader.js'
 
-  // Left wall (runs along Z at the barn's left edge)
-  addObstacle(44, -28, 2)
-  addObstacle(44, -32, 2)
-  addObstacle(44, -36, 2)
-  addObstacle(44, -40, 2)
-  addObstacle(44, -44, 2)
-  addObstacle(44, -48, 2)
-  addObstacle(44, -52, 2)
+  // Left wall (x=37, z from -20 to -60)
+  for (let z = -20; z >= -60; z -= 4) addObstacle(37, z, 2)
 
-  // Right wall (mirror of left wall)
-  addObstacle(66, -28, 2)
-  addObstacle(66, -32, 2)
-  addObstacle(66, -36, 2)
-  addObstacle(66, -40, 2)
-  addObstacle(66, -44, 2)
-  addObstacle(66, -48, 2)
-  addObstacle(66, -52, 2)
+  // Right wall (x=73, z from -20 to -60)
+  for (let z = -20; z >= -60; z -= 4) addObstacle(73, z, 2)
 
-  // Back wall (connects left and right walls)
-  addObstacle(48, -29, 2)
-  addObstacle(52, -29, 2)
-  addObstacle(56, -29, 2)
-  addObstacle(60, -29, 2)
-  addObstacle(64, -29, 2)
+  // Back wall (z=-20, x from 37 to 73)
+  for (let x = 41; x <= 69; x += 4) addObstacle(x, -20, 2)
 
-  const gltf = loadModel('/OpenBarn.glb')
+  const gltf = loadModel('/Big Barn.glb')
 
   function setupBarn(scene) {
     scene.traverse((child) => {

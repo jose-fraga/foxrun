@@ -432,7 +432,7 @@
     playerZ = resolved.z
 
     // Clamp to fence perimeter
-    const FENCE_LIMIT = 178
+    const FENCE_LIMIT = 248
     playerX = Math.max(-FENCE_LIMIT, Math.min(FENCE_LIMIT, playerX))
     playerZ = Math.max(-FENCE_LIMIT, Math.min(FENCE_LIMIT, playerZ))
 

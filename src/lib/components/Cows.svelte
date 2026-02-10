@@ -27,7 +27,7 @@
   const BULL_RETURN_DIST = 35 // bull gives up chase beyond this from group
   const BULL_CHARGE_SPEED = 10
   const WALK_SPEED = 1.5
-  const GROUP_CENTER = { x: -55, z: -55 }
+  const GROUP_CENTER = { x: -110, z: -90 }
   const WANDER_RADIUS = 45
   const MIN_SEPARATION = 8
 

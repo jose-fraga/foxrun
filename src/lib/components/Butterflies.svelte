@@ -8,16 +8,20 @@
 
   const gltf = loadModel('/Butterfly.glb')
 
-  const COUNT = 4
+  const COUNT = 8
   const FLUTTER_HEIGHT = 2.5
   const WANDER_SPEED = 2.5
   const WANDER_RADIUS = 8
 
   const SPAWN_POINTS = [
-    { x: -42, z: -55 },
-    { x: 25, z: -15 },
+    { x: -95, z: -85 },
     { x: -20, z: 30 },
-    { x: 80, z: 20 },
+    { x: -130, z: 120 },
+    { x: 120, z: 60 },
+    { x: 180, z: -30 },
+    { x: -160, z: 50 },
+    { x: 30, z: 160 },
+    { x: 60, z: -100 },
   ]
 
   let seed = 77

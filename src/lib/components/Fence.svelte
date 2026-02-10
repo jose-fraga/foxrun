@@ -6,7 +6,7 @@
 
   const gltf = loadModel('/Fence.glb')
 
-  const HALF_SIZE = 180
+  const HALF_SIZE = 250
   const SCALE = 3
 
   let instancedMeshes = $state(null)
