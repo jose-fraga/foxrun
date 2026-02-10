@@ -14,27 +14,35 @@
   const whiteHorseGltf = loadModel('/White Horse.glb')
   const remotePlayers = $derived(getRemotePlayers())
 
-  // Running sound — audible when fleeing near the player
-  const HEAR_DIST = 25
-  const runAudio = new Audio('/sounds/grass_running.mp3')
-  runAudio.loop = true
-  runAudio.volume = 0
-  let audioPlaying = false
+  // Galloping sound — audible when fleeing near the player
+  const HEAR_DIST = 30
+  const gallopAudio = new Audio('/sounds/horse-galloping.mp3')
+  gallopAudio.loop = true
+  gallopAudio.volume = 0
+  let gallopPlaying = false
   let pitchTimer = 0
+
+  // Neigh sound — occasional when player is near horses
+  const NEIGH_DIST = 50
+  const neighAudio = new Audio('/sounds/horse-neigh.mp3')
+  neighAudio.volume = 0.2
+  let neighCooldown = 3 + Math.random() * 5
 
   $effect(() => {
     if (isMuted()) {
-      if (audioPlaying) {
-        runAudio.pause()
-        runAudio.currentTime = 0
-        audioPlaying = false
+      if (gallopPlaying) {
+        gallopAudio.pause()
+        gallopAudio.currentTime = 0
+        gallopPlaying = false
       }
+      neighAudio.pause()
+      neighAudio.currentTime = 0
     }
   })
 
   const COUNT = 5
   const WALK_SPEED = 2.0
-  const RUN_SPEED = 14
+  const RUN_SPEED = 20
   const FIELD_LIMIT = 230
   const WANDER_RADIUS = 30
   const MIN_SEPARATION = 3
@@ -333,7 +341,7 @@
       }
     }
 
-    // Running sound — volume based on closest fleeing horse
+    // Galloping sound — volume based on closest fleeing horse
     let closestFleeingDist = Infinity
     for (const h of horses) {
       if (h.state !== 'fleeing') continue
@@ -344,24 +352,47 @@
     }
 
     if (closestFleeingDist < HEAR_DIST && !isMuted()) {
-      const vol = 0.3 * (1 - closestFleeingDist / HEAR_DIST)
-      runAudio.volume = Math.max(0, vol)
-      if (!audioPlaying) {
-        runAudio.playbackRate = 1.3 + Math.random() * 0.2
-        runAudio.play().catch(() => {})
-        audioPlaying = true
+      const vol = 0.35 * (1 - closestFleeingDist / HEAR_DIST)
+      gallopAudio.volume = Math.max(0, vol)
+      if (!gallopPlaying) {
+        gallopAudio.playbackRate = 0.9 + Math.random() * 0.2
+        gallopAudio.play().catch(() => {})
+        gallopPlaying = true
       }
       pitchTimer -= delta
       if (pitchTimer <= 0) {
-        runAudio.playbackRate = 1.2 + Math.random() * 0.4
-        pitchTimer = 0.2 + Math.random() * 0.15
+        gallopAudio.playbackRate = 0.85 + Math.random() * 0.3
+        pitchTimer = 0.3 + Math.random() * 0.2
       }
     } else {
-      if (audioPlaying) {
-        runAudio.pause()
-        runAudio.currentTime = 0
-        audioPlaying = false
+      if (gallopPlaying) {
+        gallopAudio.pause()
+        gallopAudio.currentTime = 0
+        gallopPlaying = false
       }
+    }
+
+    // Neigh sound — occasional when player is near any horse
+    let closestHorseDist = Infinity
+    for (const h of horses) {
+      const ddx = h.x - localPlayerPos.x
+      const ddz = h.z - localPlayerPos.z
+      const dd = Math.sqrt(ddx * ddx + ddz * ddz)
+      if (dd < closestHorseDist) closestHorseDist = dd
+    }
+
+    if (closestHorseDist < NEIGH_DIST && !isMuted()) {
+      neighCooldown -= delta
+      if (neighCooldown <= 0) {
+        const vol = 0.2 * (1 - closestHorseDist / NEIGH_DIST)
+        neighAudio.volume = Math.max(0.03, vol)
+        neighAudio.currentTime = 0
+        neighAudio.playbackRate = 0.9 + Math.random() * 0.2
+        neighAudio.play().catch(() => {})
+        neighCooldown = 8 + Math.random() * 15
+      }
+    } else {
+      neighCooldown = 3 + Math.random() * 5
     }
   })
 
