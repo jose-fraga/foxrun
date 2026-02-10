@@ -7,10 +7,11 @@
   const { isMobile, shadowMapSize } = $props()
 
   // --- Cycle timing ---
-  // 5 min hold + 30s transition + 5 min hold + 30s transition = 660s
-  const HOLD_DURATION = 300 // 5 minutes per state
+  // 5 min day + 30s transition + 2 min night + 30s transition = 480s
+  const DAY_HOLD = 300   // 5 minutes
+  const NIGHT_HOLD = 120 // 2 minutes
   const TRANSITION_DURATION = 30
-  const CYCLE_DURATION = (HOLD_DURATION + TRANSITION_DURATION) * 2 // 660s
+  const CYCLE_DURATION = DAY_HOLD + NIGHT_HOLD + TRANSITION_DURATION * 2 // 480s
 
   // --- Color helpers ---
   const _c1 = new THREE.Color()
@@ -162,13 +163,13 @@
     const cycleTime = ((elapsed % CYCLE_DURATION) + CYCLE_DURATION) % CYCLE_DURATION
 
     // Phase boundaries (in seconds):
-    // 0 – HOLD: sunset hold
-    // HOLD – HOLD+TRANS: sunset → night
-    // HOLD+TRANS – 2*HOLD+TRANS: night hold
-    // 2*HOLD+TRANS – end: night → sunset
-    const t1 = HOLD_DURATION
+    // 0 – DAY_HOLD: day hold
+    // DAY_HOLD – DAY_HOLD+TRANS: day → night
+    // DAY_HOLD+TRANS – DAY_HOLD+TRANS+NIGHT_HOLD: night hold
+    // DAY_HOLD+TRANS+NIGHT_HOLD – end: night → day
+    const t1 = DAY_HOLD
     const t2 = t1 + TRANSITION_DURATION
-    const t3 = t2 + HOLD_DURATION
+    const t3 = t2 + NIGHT_HOLD
     // t4 = CYCLE_DURATION
 
     if (cycleTime < t1) {

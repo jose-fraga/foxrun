@@ -11,6 +11,7 @@
   import { connect, disconnect } from "./lib/network.js";
   import "./lib/stores/players.svelte.js";
   import { resetQuests } from "./lib/stores/questProgress.svelte.js";
+  import { clearMessages } from "./lib/stores/farmerChat.svelte.js";
   import { getInteractionPrompt } from "./lib/stores/interactionPrompt.svelte.js";
   import { isMuted, toggleMute } from "./lib/stores/sound.svelte.js";
   import { playClick } from "./lib/utils/uiSound.js";
@@ -108,6 +109,7 @@
     showLoadingScreen();
     disconnect();
     resetQuests();
+    clearMessages();
     connected = false;
     showLobby = false;
     // Let the DOM unmount the game scene, then reconnect

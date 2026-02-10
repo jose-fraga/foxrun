@@ -11,7 +11,7 @@
   import Barn from './Barn.svelte'
   import Water from './Water.svelte'
   import Cows from './Cows.svelte'
-  import Deer from './Deer.svelte'
+  import Horses from './Horses.svelte'
   import Farmer from './Farmer.svelte'
   import Flowers from './Flowers.svelte'
   import DayNightCycle from './DayNightCycle.svelte'
@@ -20,6 +20,10 @@
   import SoftSpot from './SoftSpot.svelte'
   import Shovel from './Shovel.svelte'
   import Crops from './Crops.svelte'
+  import Tractor from './Tractor.svelte'
+  import AmbientSounds from './AmbientSounds.svelte'
+  import Butterflies from './Butterflies.svelte'
+  import HayBales from './HayBales.svelte'
 
   import { getRemotePlayers } from '../stores/players.svelte.js'
 
@@ -58,6 +62,12 @@
   <!-- Barn -->
   <Barn />
 
+  <!-- Hay bales inside barn -->
+  <HayBales />
+
+  <!-- Tractor -->
+  <Tractor />
+
   <!-- Pond -->
   <Water />
 
@@ -70,8 +80,8 @@
   <!-- Cows -->
   <Cows />
 
-  <!-- Deer -->
-  <Deer />
+  <!-- Horses -->
+  <Horses />
 
   <!-- Farmer NPC -->
   <Farmer />
@@ -84,6 +94,12 @@
 
   <!-- Birds -->
   <Birds />
+
+  <!-- Butterflies (daytime) -->
+  <Butterflies />
+
+  <!-- Ambient sounds (wind, water, crickets) -->
+  <AmbientSounds />
 
   <!-- Quest: Soft spot on fence -->
   <SoftSpot />

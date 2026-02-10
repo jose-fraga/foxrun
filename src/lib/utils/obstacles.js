@@ -8,6 +8,11 @@ export function clearObstacles() {
   obstacles.length = 0
 }
 
+// Barn avoidance zone (padded AABB around barn walls)
+export function isInBarnZone(x, z) {
+  return x > 38 && x < 72 && z > -58 && z < -22
+}
+
 export function resolveCollision(px, pz, playerRadius) {
   let rx = px
   let rz = pz

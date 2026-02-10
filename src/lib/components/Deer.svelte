@@ -6,7 +6,7 @@
   import { localPlayerPos } from '../utils/playerPosition.js'
   import { getRemotePlayers } from '../stores/players.svelte.js'
   import { POND_CENTER, POND_RADIUS } from '../utils/pond.js'
-  import { resolveCollision } from '../utils/obstacles.js'
+  import { resolveCollision, isInBarnZone } from '../utils/obstacles.js'
   import { loadModel } from '../utils/modelLoader.js'
   import { isMuted } from '../stores/sound.svelte.js'
 
@@ -77,11 +77,18 @@
   }
 
   function pickTarget(d) {
-    const angle = rand() * Math.PI * 2
-    const dist = 5 + rand() * WANDER_RADIUS
-    const pos = clampToField(herdCenter.x + Math.cos(angle) * dist, herdCenter.z + Math.sin(angle) * dist)
-    d.targetX = pos.x
-    d.targetZ = pos.z
+    for (let attempt = 0; attempt < 10; attempt++) {
+      const angle = rand() * Math.PI * 2
+      const dist = 5 + rand() * WANDER_RADIUS
+      const pos = clampToField(herdCenter.x + Math.cos(angle) * dist, herdCenter.z + Math.sin(angle) * dist)
+      if (!isInBarnZone(pos.x, pos.z)) {
+        d.targetX = pos.x
+        d.targetZ = pos.z
+        return
+      }
+    }
+    d.targetX = herdCenter.x
+    d.targetZ = herdCenter.z
   }
 
   function initDeer(index) {
@@ -105,6 +112,7 @@
       targetZ: z,
       group: null,
       innerGroup: null,
+      walkTime: 0,
     }
     pickTarget(d)
     return d
@@ -275,13 +283,15 @@
             playAction(d, 'Idle')
           }
         } else if (d.state === 'walking') {
+          d.walkTime += delta
           const dx = d.targetX - d.x
           const dz = d.targetZ - d.z
           const dist = Math.sqrt(dx * dx + dz * dz)
 
-          if (dist < 1) {
+          if (dist < 1 || d.walkTime > 12) {
             d.state = 'idle'
             d.timer = 4 + rand() * 8
+            d.walkTime = 0
             playAction(d, 'Idle')
           } else {
             const targetRotY = Math.atan2(dx, dz)
