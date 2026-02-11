@@ -3,9 +3,11 @@
   import * as THREE from 'three'
   import { addObstacle } from '../utils/obstacles.js'
   import { loadModel } from '../utils/modelLoader.js'
+  import { getTerrainHeight } from '../utils/terrain.js'
 
   const TX = 170
   const TZ = -170
+  const TY = getTerrainHeight(TX, TZ) + 1
 
   // Elongated collision — front, center, back along the tractor's angled body
   const cos = Math.cos(-0.4)
@@ -15,7 +17,7 @@
   addObstacle(TX - sin * 4, TZ - cos * 4, 3.5)
   addObstacle(TX - sin * 8, TZ - cos * 8, 3.5)
 
-  const gltf = loadModel('/Tractor.glb')
+  const gltf = loadModel('/tractor_new.glb')
 
   // Sharp 2-band gradient for a punchier toon look
   const toonGrad = new THREE.DataTexture(
@@ -101,8 +103,8 @@
   <T
     is={value.scene}
     scale={1}
-    rotation.y={-0.4}
-    position={[TX, 0, TZ]}
+    rotation.y={-2.2}
+    position={[TX, TY + 2, TZ]}
     oncreate={() => setupTractor(value.scene)}
   />
 {/await}

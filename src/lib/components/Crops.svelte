@@ -14,7 +14,7 @@
   const Z = -40
   const Y = getTerrainHeight(X, Z)
 
-  const INTERACT_DIST = 5
+  const INTERACT_DIST = 10
   const quests = $derived(getQuests())
   let nearCrops = $state(false)
   let burstActive = $state(false)

@@ -10,7 +10,7 @@
   import { POND_CENTER, POND_RADIUS } from '../utils/pond.js'
   import { isMuted } from '../stores/sound.svelte.js'
 
-  const gltf = loadModel('/Hen.glb')
+  const gltf = loadModel('/chicken_new.glb')
   const remotePlayers = $derived(getRemotePlayers())
 
   // Chicken cluck sound — plays occasionally when player is nearby
@@ -30,14 +30,13 @@
   const COOP_Z = 40
   const COUNT = 5
   const WANDER_RADIUS = 18
-  const WALK_SPEED = 1.2
+  const WALK_SPEED = 3
   const RUN_SPEED = 20
   const FLEE_DIST = 28
   const SAFE_DIST = 35
   const FIELD_LIMIT = 230
-  const SCALE = 0.030
-  const Y_OFFSET = 1.36
-  const LEG_SWING = 0.4
+  const SCALE = 0.5
+  const Y_OFFSET = 1
 
   let seed = 333
   function rand() {
@@ -66,18 +65,11 @@
       targetZ: 0,
       state: 'idle',
       timer: 1 + rand() * 3,
-      // Walking
-      stepPhase: rand() * Math.PI * 2,
-      yOffset: 0,
-      // Head bob: offset the upper body forward/back
-      headBob: 0,
-      headBobTarget: 0,
-      tiltX: 0,
-      tiltZ: 0,
       group: null,
-      bodyGroup: null,
-      leftLeg: null,
-      rightLeg: null,
+      innerGroup: null,
+      mixer: null,
+      actions: {},
+      currentAction: null,
     }
     c.targetRotY = c.rotY
     pickTarget(c)
@@ -122,98 +114,66 @@
     c.timer = 0.3 + rand() * 0.3
   }
 
-  // Split hen mesh into body + left/right legs for procedural leg animation
-  function setupChicken(c, scene) {
-    const meshes = []
+  function playAction(c, name) {
+    if (c.currentAction === name) return
+    const prev = c.actions[c.currentAction]
+    const next = c.actions[name]
+    if (!next) return
+    next.reset().play()
+    if (prev) prev.crossFadeTo(next, 0.3, true)
+    c.currentAction = name
+  }
+
+  function pickIdleAnim(c) {
+    const names = Object.keys(c.actions)
+    const idle = names.find(n => /idle/i.test(n))
+    const twerk = names.find(n => /twerk/i.test(n))
+    const candidates = [idle, twerk].filter(Boolean)
+    if (candidates.length === 0) return names[0]
+    return candidates[Math.floor(rand() * candidates.length)]
+  }
+
+  // Sharp 2-band gradient for punchier toon shading
+  const toonGrad = new THREE.DataTexture(
+    new Uint8Array([100, 100, 100, 255, 255, 255, 255, 255]),
+    2, 1, THREE.RGBAFormat
+  )
+  toonGrad.minFilter = THREE.NearestFilter
+  toonGrad.magFilter = THREE.NearestFilter
+  toonGrad.needsUpdate = true
+
+  function enhanceToon(scene) {
     scene.traverse((child) => {
-      if (child.isMesh) {
-        child.castShadow = true
-        meshes.push(child)
+      if (!child.isMesh) return
+      child.castShadow = true
+      const mats = Array.isArray(child.material) ? child.material : [child.material]
+      for (const mat of mats) {
+        if (mat.isMeshToonMaterial) {
+          mat.gradientMap = toonGrad
+          mat.emissiveIntensity = 0.3
+          if (mat.normalMap) { mat.normalMap.dispose(); mat.normalMap = null }
+          if (mat.bumpMap) { mat.bumpMap.dispose(); mat.bumpMap = null }
+          if (mat.roughnessMap) { mat.roughnessMap.dispose(); mat.roughnessMap = null }
+          mat.needsUpdate = true
+        }
       }
     })
-    if (meshes.length === 0) return
+  }
 
-    // Compute bounding box to find where legs end
-    const box = new THREE.Box3()
-    for (const mesh of meshes) box.expandByObject(mesh)
-    const height = box.max.y - box.min.y
-    const legCutoff = box.min.y + height * 0.28
-
-    for (const mesh of meshes) {
-      const geo = mesh.geometry
-      const pos = geo.attributes.position
-      const idx = geo.index
-      const hasNormals = !!geo.attributes.normal
-      const hasUV = !!geo.attributes.uv
-
-      const bodyD = { v: [], n: [], uv: [] }
-      const leftD = { v: [], n: [], uv: [] }
-      const rightD = { v: [], n: [], uv: [] }
-
-      const triCount = idx ? idx.count / 3 : pos.count / 3
-      for (let t = 0; t < triCount; t++) {
-        const i0 = idx ? idx.getX(t * 3) : t * 3
-        const i1 = idx ? idx.getX(t * 3 + 1) : t * 3 + 1
-        const i2 = idx ? idx.getX(t * 3 + 2) : t * 3 + 2
-        const avgY = (pos.getY(i0) + pos.getY(i1) + pos.getY(i2)) / 3
-        const avgX = (pos.getX(i0) + pos.getX(i1) + pos.getX(i2)) / 3
-        const target = avgY < legCutoff ? (avgX >= 0 ? rightD : leftD) : bodyD
-
-        for (const ii of [i0, i1, i2]) {
-          target.v.push(pos.getX(ii), pos.getY(ii), pos.getZ(ii))
-          if (hasNormals) {
-            const nm = geo.attributes.normal
-            target.n.push(nm.getX(ii), nm.getY(ii), nm.getZ(ii))
-          }
-          if (hasUV) {
-            const uv = geo.attributes.uv
-            target.uv.push(uv.getX(ii), uv.getY(ii))
-          }
-        }
-      }
-
-      mesh.visible = false
-
-      // Rebuild body mesh in place
-      if (bodyD.v.length > 0) {
-        const g = new THREE.BufferGeometry()
-        g.setAttribute('position', new THREE.Float32BufferAttribute(bodyD.v, 3))
-        if (bodyD.n.length) g.setAttribute('normal', new THREE.Float32BufferAttribute(bodyD.n, 3))
-        if (bodyD.uv.length) g.setAttribute('uv', new THREE.Float32BufferAttribute(bodyD.uv, 2))
-        const m = new THREE.Mesh(g, mesh.material)
-        m.castShadow = true
-        mesh.parent.add(m)
-      }
-
-      // Create leg pivot groups at hip height
-      for (const [data, side] of [[leftD, 'left'], [rightD, 'right']]) {
-        if (data.v.length === 0) continue
-        const pivot = new THREE.Group()
-        pivot.position.y = legCutoff
-
-        // Offset leg vertices relative to pivot
-        const offsetV = [...data.v]
-        for (let i = 1; i < offsetV.length; i += 3) {
-          offsetV[i] -= legCutoff
-        }
-        const g = new THREE.BufferGeometry()
-        g.setAttribute('position', new THREE.Float32BufferAttribute(offsetV, 3))
-        if (data.n.length) g.setAttribute('normal', new THREE.Float32BufferAttribute(data.n, 3))
-        if (data.uv.length) g.setAttribute('uv', new THREE.Float32BufferAttribute(data.uv, 2))
-        const m = new THREE.Mesh(g, mesh.material)
-        m.castShadow = true
-        pivot.add(m)
-        mesh.parent.add(pivot)
-
-        if (side === 'left') c.leftLeg = pivot
-        else c.rightLeg = pivot
-      }
+  function setupChicken(c, gltfData, scene) {
+    enhanceToon(scene)
+    c.mixer = new THREE.AnimationMixer(scene)
+    for (const clip of gltfData.animations) {
+      c.actions[clip.name] = c.mixer.clipAction(clip)
     }
+    const startAnim = pickIdleAnim(c)
+    if (startAnim) playAction(c, startAnim)
   }
 
   useTask((delta) => {
     for (const c of chickens) {
       if (!c.group) continue
+      if (c.mixer) c.mixer.update(delta)
       c.timer -= delta
 
       const player = getClosestPlayerDist(c)
@@ -221,16 +181,19 @@
       // Flee if player is close
       if (player.dist < FLEE_DIST && c.state !== 'fleeing') {
         c.state = 'fleeing'
-        c.stepPhase = 0
+        const walkName = Object.keys(c.actions).find(n => /walk/i.test(n))
+        if (walkName) {
+          playAction(c, walkName)
+          if (c.actions[walkName]) c.actions[walkName].timeScale = 2
+        }
       }
-
-      // Ease legs back to neutral when stationary
-      const easeLegs = (c.state !== 'walking' && c.state !== 'fleeing')
 
       if (c.state === 'fleeing') {
         if (player.dist > SAFE_DIST) {
           c.state = 'idle'
           c.timer = 1 + rand() * 2
+          const anim = pickIdleAnim(c)
+          if (anim) playAction(c, anim)
         } else {
           const awayX = c.x - player.px
           const awayZ = c.z - player.pz
@@ -248,45 +211,21 @@
             c.rotY += dAngle * Math.min(1, 8 * delta)
           }
 
-          // Chicken run animation
-          c.stepPhase += delta * 24
-          const step = Math.sin(c.stepPhase)
-          const stepAbs = Math.abs(step)
-
-          // Strong forward lean when sprinting
-          c.tiltX += (0.25 - c.tiltX) * 6 * delta
-
-          // Chicken head thrust: snaps forward then slowly retracts each stride
-          const headCycle = Math.sin(c.stepPhase * 2)
-          c.headBob = 0.08 + (headCycle > 0 ? headCycle * 0.2 : headCycle * 0.06)
-
-          // Slight vertical bounce from push-off
-          c.yOffset = stepAbs * 0.025
-
-          // Alternating body waddle — tilts toward the planted foot
-          c.tiltZ = step * 0.05
-
-          // Asymmetric leg swing: fast forward, slower back (using clamped sine)
-          const legPhase = Math.sin(c.stepPhase)
-          const leftSwing = legPhase > 0 ? legPhase : legPhase * 0.5
-          const rightSwing = -legPhase > 0 ? -legPhase : -legPhase * 0.5
-          if (c.leftLeg) c.leftLeg.rotation.x = leftSwing * LEG_SWING * 1.8
-          if (c.rightLeg) c.rightLeg.rotation.x = -rightSwing * LEG_SWING * 1.8
-
           const clamped = clampToField(c.x, c.z)
           c.x = clamped.x
           c.z = clamped.z
         }
       } else if (c.state === 'idle') {
-        // Ease back to neutral
-        c.tiltX += (0 - c.tiltX) * 6 * delta
-        c.tiltZ += (0 - c.tiltZ) * 6 * delta
-        c.yOffset += (0 - c.yOffset) * 6 * delta
-        c.headBob += (0 - c.headBob) * 8 * delta
-
         if (c.timer <= 0) {
-          pickTarget(c)
-          startTurning(c)
+          // Randomly switch idle anim or start walking
+          if (rand() < 0.4) {
+            const anim = pickIdleAnim(c)
+            if (anim) playAction(c, anim)
+            c.timer = 3 + rand() * 5
+          } else {
+            pickTarget(c)
+            startTurning(c)
+          }
         }
       } else if (c.state === 'turning') {
         let dAngle = c.targetRotY - c.rotY
@@ -297,7 +236,11 @@
         if (Math.abs(dAngle) < 0.1 || c.timer <= 0) {
           c.rotY = c.targetRotY
           c.state = 'walking'
-          c.stepPhase = 0
+          const walkName = Object.keys(c.actions).find(n => /walk/i.test(n))
+          if (walkName) {
+            playAction(c, walkName)
+            if (c.actions[walkName]) c.actions[walkName].timeScale = 1
+          }
         }
       } else if (c.state === 'walking') {
         const dx = c.targetX - c.x
@@ -307,36 +250,12 @@
         if (dist < 0.5) {
           c.state = 'idle'
           c.timer = 2 + rand() * 5
+          const anim = pickIdleAnim(c)
+          if (anim) playAction(c, anim)
         } else {
-          // Move forward
           c.x += (dx / dist) * WALK_SPEED * delta
           c.z += (dz / dist) * WALK_SPEED * delta
 
-          // Slight forward lean while walking
-          c.tiltX += (0.12 - c.tiltX) * 6 * delta
-
-          // Step cycle
-          c.stepPhase += delta * 10
-          const step = Math.sin(c.stepPhase)
-
-          // Chicken head thrust: extends forward then retracts each stride
-          const headCycle = Math.sin(c.stepPhase * 2)
-          c.headBob = 0.04 + (headCycle > 0 ? headCycle * 0.1 : headCycle * 0.03)
-
-          // Gentle vertical bounce
-          c.yOffset = Math.abs(step) * 0.015
-
-          // Subtle side-to-side waddle
-          c.tiltZ = step * 0.025
-
-          // Asymmetric leg swing
-          const legPhase = Math.sin(c.stepPhase)
-          const leftW = legPhase > 0 ? legPhase : legPhase * 0.5
-          const rightW = -legPhase > 0 ? -legPhase : -legPhase * 0.5
-          if (c.leftLeg) c.leftLeg.rotation.x = leftW * LEG_SWING
-          if (c.rightLeg) c.rightLeg.rotation.x = -rightW * LEG_SWING
-
-          // Correct heading
           const targetRot = Math.atan2(dx, dz)
           let dAngle = targetRot - c.rotY
           if (dAngle > Math.PI) dAngle -= 2 * Math.PI
@@ -345,27 +264,31 @@
         }
       }
 
-      // Ease legs back to neutral when not walking
-      if (easeLegs) {
-        if (c.leftLeg) c.leftLeg.rotation.x += (0 - c.leftLeg.rotation.x) * 6 * delta
-        if (c.rightLeg) c.rightLeg.rotation.x += (0 - c.rightLeg.rotation.x) * 6 * delta
+      // Soft separation from other chickens
+      for (const other of chickens) {
+        if (other === c) continue
+        const sx = c.x - other.x
+        const sz = c.z - other.z
+        const sd = Math.sqrt(sx * sx + sz * sz)
+        if (sd < 2 && sd > 0.01) {
+          const push = (2 - sd) * 0.5 * delta
+          c.x += (sx / sd) * push
+          c.z += (sz / sd) * push
+        }
       }
 
-      // Push out of obstacles (chicken coop, barn, windmill, etc.)
+      // Push out of obstacles
       const resolved = resolveCollision(c.x, c.z, 0.5)
       c.x = resolved.x
       c.z = resolved.z
 
       // Apply transforms
-      const groundY = getTerrainHeight(c.x, c.z)
-      c.group.position.set(c.x, groundY + Y_OFFSET + c.yOffset, c.z)
-      c.group.rotation.y = c.rotY
-
-      if (c.bodyGroup) {
-        c.bodyGroup.rotation.x = c.tiltX
-        c.bodyGroup.rotation.z = c.tiltZ
-        // Head bob shifts the body forward along its facing direction
-        c.bodyGroup.position.z = c.headBob
+      if (c.group) {
+        const groundY = getTerrainHeight(c.x, c.z)
+        c.group.position.set(c.x, groundY + Y_OFFSET, c.z)
+      }
+      if (c.innerGroup) {
+        c.innerGroup.rotation.y = c.rotY
       }
     }
 
@@ -398,14 +321,19 @@
   {#each chickens as c}
     {@const scene = cloneSkeleton(value.scene)}
     <T.Group
+      position.x={c.x}
+      position.y={getTerrainHeight(c.x, c.z)}
+      position.z={c.z}
       oncreate={(ref) => { c.group = ref }}
     >
-      <T.Group oncreate={(ref) => { c.bodyGroup = ref }}>
+      <T.Group
+        rotation.y={c.rotY}
+        oncreate={(ref) => { c.innerGroup = ref }}
+      >
         <T
           is={scene}
           scale={SCALE}
-          rotation.y={0}
-          oncreate={() => setupChicken(c, scene)}
+          oncreate={() => setupChicken(c, value, scene)}
         />
       </T.Group>
     </T.Group>
