@@ -38,7 +38,7 @@
             </svg>
           {/if}
         </span>
-        <span class="label">Mark Soft Spot</span>
+        <span class="label">Find Soft Spot Near The Fence</span>
       </label>
       <label class="quest-item" class:done={quests.farmerInfo}>
         <span class="checkbox">
